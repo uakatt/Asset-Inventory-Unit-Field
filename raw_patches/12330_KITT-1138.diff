@@ -1,0 +1,19 @@
+Index: financial-system/kfs-cfg-dbs/trunk/update/KITT-1138.xml
+===================================================================
+--- financial-system/kfs-cfg-dbs/trunk/update/KITT-1138.xml	(revision 0)
++++ financial-system/kfs-cfg-dbs/trunk/update/KITT-1138.xml	(revision 12330)
+@@ -0,0 +1,13 @@
++<?xml version="1.0" encoding="UTF-8"?>
++
++<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog/1.9"
++ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
++ xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog/1.9
++         http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-1.9.xsd">
++
++ <changeSet id="$Revision$" author="$Author$">
++
++  <dropColumn tableName="CM_CPTLAST_INV_UNIT_T" columnName="ORG_NM" />
++
++ </changeSet>
++</databaseChangeLog>
+\ No newline at end of file

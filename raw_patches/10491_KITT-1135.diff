@@ -1,0 +1,117 @@
+Index: financial-system/kfs-cfg-dbs/trunk/latest/tab/CM_CPTLAST_EXT_T.xml
+===================================================================
+--- financial-system/kfs-cfg-dbs/trunk/latest/tab/CM_CPTLAST_EXT_T.xml	(revision 10490)
++++ financial-system/kfs-cfg-dbs/trunk/latest/tab/CM_CPTLAST_EXT_T.xml	(revision 10491)
+@@ -1,22 +1,38 @@
+ <?xml version="1.0" encoding="UTF-8"?>
+- 
+-<databaseChangeLog
+-  xmlns="http://www.liquibase.org/xml/ns/dbchangelog/1.9"
+-  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+-  xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog/1.9
++
++<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog/1.9"
++ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
++ xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog/1.9
+          http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-1.9.xsd">
+-    <changeSet author="przybyls (generated)" id="1252906578090-176">
+-        <createTable tableName="CM_CPTLAST_EXT_T">
+-            <column name="CPTLAST_NBR" type="NUMBER(12,0)">
+-                <constraints nullable="false" primaryKey="true" primaryKeyName="CM_CPTLAST_EXT_T_TP1"/>
+-            </column>
+-            <column name="OBJ_ID" type="VARCHAR2(36 BYTE)">
+-                <constraints nullable="false"/>
+-            </column>
+-            <column name="VER_NBR" type="NUMBER(8,0)">
+-                <constraints nullable="false"/>
+-            </column>
+-        </createTable>
+-    </changeSet>
+- 
++
++   <changeSet id="$Revision$" author="$Author$">
++
++  <createTable tableName="CM_CPTLAST_EXT_T">
++
++   <column name="CPTLAST_NBR" type="NUMBER(12,0)">
++    <constraints nullable="false" primaryKey="true"
++     primaryKeyName="CM_CPTLAST_EXT_T_TP1" />
++   </column>
++
++   <column name="OBJ_ID" type="varchar2(36 BYTE)">
++    <constraints nullable="false" unique="true"
++     uniqueConstraintName="CM_CPTLAST_EXT_TP0" />
++   </column>
++
++   <column name="VER_NBR" type="NUMBER(8,0)">
++    <constraints nullable="false" />
++   </column>
++
++   <column name="INV_UNIT_CD" type="VARCHAR2(2 BYTE)">
++   </column>
++
++   <column name="FIN_COA_CD" type="VARCHAR2(2 BYTE)">
++   </column>
++
++   <column name="ORG_CD" type="VARCHAR2(4 BYTE)">
++   </column>
++
++  </createTable>
++ </changeSet>
++
+ </databaseChangeLog>
+Index: financial-system/kfs-cfg-dbs/trunk/latest/tab/CM_CPTLAST_INV_UNIT_T.xml
+===================================================================
+--- financial-system/kfs-cfg-dbs/trunk/latest/tab/CM_CPTLAST_INV_UNIT_T.xml	(revision 0)
++++ financial-system/kfs-cfg-dbs/trunk/latest/tab/CM_CPTLAST_INV_UNIT_T.xml	(revision 10491)
+@@ -0,0 +1,50 @@
++<?xml version="1.0" encoding="UTF-8"?>
++
++<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog/1.9"
++ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
++ xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog/1.9
++         http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-1.9.xsd">
++
++   <changeSet id="$Revision$" author="$Author$">
++
++  <createTable tableName="CM_CPTLAST_INV_UNIT_T">
++
++   <column name="INV_UNIT_CD" type="VARCHAR2(2 BYTE)">
++    <constraints nullable="false" primaryKey="true"
++     primaryKeyName="CM_CPTLAST_AWARD_HIST_TP1" />
++   </column>
++
++   <column name="FIN_COA_CD" type="VARCHAR2(2 BYTE)">
++    <constraints nullable="false" primaryKey="true"
++     primaryKeyName="CM_CPTLAST_AWARD_HIST_TP1" />
++   </column>
++
++   <column name="ORG_CD" type="VARCHAR2(4 BYTE)">
++    <constraints nullable="false" primaryKey="true"
++     primaryKeyName="CM_CPTLAST_AWARD_HIST_TP1" />
++   </column>
++
++   <column name="ORG_NM" type="VARCHAR2(40 BYTE)">
++    <constraints nullable="false" />
++   </column>
++
++   <column name="INV_UNIT_NM" type="VARCHAR2(40 BYTE)">
++    <constraints nullable="false" />
++   </column>
++
++   <column name="OBJ_ID" type="varchar2(36 BYTE)">
++    <constraints nullable="false" unique="true"
++     uniqueConstraintName="CM_CPTLAST_INV_UNIT_TP0" />
++   </column>
++
++   <column name="VER_NBR" type="NUMBER(8,0)">
++    <constraints nullable="false" />
++   </column>
++
++   <column name="ACTV_IND" type="varchar2(1 BYTE)">
++    <constraints nullable="false" />
++   </column>
++
++  </createTable>
++ </changeSet>
++</databaseChangeLog>

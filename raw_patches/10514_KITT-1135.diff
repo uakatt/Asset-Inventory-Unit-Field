@@ -1,0 +1,25 @@
+Index: financial-system/kfs-cfg-dbs/trunk/latest/tab/CM_CPTLAST_INV_UNIT_T.xml
+===================================================================
+--- financial-system/kfs-cfg-dbs/trunk/latest/tab/CM_CPTLAST_INV_UNIT_T.xml	(revision 10513)
++++ financial-system/kfs-cfg-dbs/trunk/latest/tab/CM_CPTLAST_INV_UNIT_T.xml	(revision 10514)
+@@ -11,17 +11,17 @@
+ 
+    <column name="INV_UNIT_CD" type="VARCHAR2(2 BYTE)">
+     <constraints nullable="false" primaryKey="true"
+-     primaryKeyName="CM_CPTLAST_AWARD_HIST_TP1" />
++     primaryKeyName="CM_CPTLAST_INV_UNIT_TP1" />
+    </column>
+ 
+    <column name="FIN_COA_CD" type="VARCHAR2(2 BYTE)">
+     <constraints nullable="false" primaryKey="true"
+-     primaryKeyName="CM_CPTLAST_AWARD_HIST_TP1" />
++     primaryKeyName="CM_CPTLAST_INV_UNIT_TP1" />
+    </column>
+ 
+    <column name="ORG_CD" type="VARCHAR2(4 BYTE)">
+     <constraints nullable="false" primaryKey="true"
+-     primaryKeyName="CM_CPTLAST_AWARD_HIST_TP1" />
++     primaryKeyName="CM_CPTLAST_INV_UNIT_TP1" />
+    </column>
+ 
+    <column name="ORG_NM" type="VARCHAR2(40 BYTE)">

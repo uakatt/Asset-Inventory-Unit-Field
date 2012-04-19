@@ -1,0 +1,3998 @@
+Index: financial-system/kfs/trunk/work/src/org/kuali/kfs/module/cam/businessobject/Asset.java
+===================================================================
+--- financial-system/kfs/trunk/work/src/org/kuali/kfs/module/cam/businessobject/Asset.java	(revision 11920)
++++ financial-system/kfs/trunk/work/src/org/kuali/kfs/module/cam/businessobject/Asset.java	(revision 11921)
+@@ -49,6 +49,9 @@
+ import org.kuali.rice.kns.util.ObjectUtils;
+ import org.kuali.rice.kns.util.TypedArrayList;
+ import org.kuali.rice.kns.util.UrlFactory;
++
++import edu.arizona.kfs.module.cam.businessobject.AssetExtension;
++import edu.arizona.kfs.module.cam.businessobject.AssetGlobalDetailExtension;
+ 
+ /**
+  * @author Kuali Nervous System Team (kualidev@oncourse.iu.edu)
+@@ -228,8 +231,17 @@
+         this.setOrganizationInventoryName(assetGlobalDetail.getOrganizationInventoryName());
+         this.setGovernmentTagNumber(assetGlobalDetail.getGovernmentTagNumber());
+         this.setCampusTagNumber(assetGlobalDetail.getCampusTagNumber());
+-        this.setNationalStockNumber(assetGlobalDetail.getNationalStockNumber());
+-
++        this.setNationalStockNumber(assetGlobalDetail.getNationalStockNumber());
++        
++        //**START AZ** KITT-1131 KevinMcO
++        AssetExtension assetExtension = (AssetExtension) this.getExtension();
++        AssetGlobalDetailExtension assetGlobalDetailExtension = (AssetGlobalDetailExtension) assetGlobalDetail.getExtension();
++        
++        assetExtension.setInventoryUnitChartOfAccountsCode(assetGlobalDetailExtension.getInventoryUnitChartOfAccountsCode());
++        assetExtension.setInventoryUnitCode(assetGlobalDetailExtension.getInventoryUnitCode());
++        assetExtension.setInventoryUnitOrganizationCode(assetGlobalDetailExtension.getInventoryUnitOrganizationCode());
++        //**END AZ** KITT-1131 KevinMcO
++                
+         AssetOrganization assetOrganization = new AssetOrganization();
+         assetOrganization.setCapitalAssetNumber(assetGlobalDetail.getCapitalAssetNumber());
+         assetOrganization.setOrganizationAssetTypeIdentifier(assetGlobalDetail.getOrganizationAssetTypeIdentifier());
+Index: financial-system/kfs/trunk/work/src/org/kuali/kfs/module/cam/document/service/impl/AssetGlobalServiceImpl.java
+===================================================================
+--- financial-system/kfs/trunk/work/src/org/kuali/kfs/module/cam/document/service/impl/AssetGlobalServiceImpl.java	(revision 11920)
++++ financial-system/kfs/trunk/work/src/org/kuali/kfs/module/cam/document/service/impl/AssetGlobalServiceImpl.java	(revision 11921)
+@@ -406,7 +406,7 @@
+             
+         }
+         
+-        //Begin KITT-697
++        //KevinMcO Begin KITT-697
+         
+         for(int i = 0; i < newAssets.size(); i++){
+             Asset asset = newAssets.get(i);
+@@ -416,7 +416,7 @@
+         AssetExtension assetExtension = (AssetExtension) separateSourceCapitalAsset.getExtension();
+         assetExtension.setCapitalAssetNumber(separateSourceCapitalAsset.getCapitalAssetNumber());
+         
+-        //END KITT-697
++        //KevinMcO END KITT-697
+         
+         // adjust source asset amounts
+         KualiDecimalUtils kualiDecimalUtils = new KualiDecimalUtils();
+Index: financial-system/kfs/trunk/work/src/org/kuali/kfs/module/cam/document/AssetGlobalMaintainableImpl.java
+===================================================================
+--- financial-system/kfs/trunk/work/src/org/kuali/kfs/module/cam/document/AssetGlobalMaintainableImpl.java	(revision 11920)
++++ financial-system/kfs/trunk/work/src/org/kuali/kfs/module/cam/document/AssetGlobalMaintainableImpl.java	(revision 11921)
+@@ -60,6 +60,9 @@
+ import org.kuali.rice.kns.util.TypedArrayList;
+ import org.kuali.rice.kns.workflow.service.KualiWorkflowDocument;
+ 
++import edu.arizona.kfs.module.cam.businessobject.AssetExtension;
++import edu.arizona.kfs.module.cam.businessobject.AssetGlobalDetailExtension;
++
+ /**
+  * This class overrides the base {@link KualiGlobalMaintainableImpl} to generate the specific maintenance locks for Global assets
+  */
+@@ -413,21 +416,36 @@
+ 
+ 
+     /**
+-     * @see org.kuali.rice.kns.maintenance.KualiGlobalMaintainableImpl#prepareForSave()
++     * @see org.kuali.rice.kns.maintenance.KualiGlobalMaintainableImpl#prepareForSave() this method clears out all the
++     *      assetGlobalDetails and then sets them to the correct values
+      */
+     @Override
+     public void prepareForSave() {
+         super.prepareForSave();
+         AssetGlobal assetGlobal = (AssetGlobal) getBusinessObject();
++
++
++        // Shared details in asset location tab of asset Global Add
+         List<AssetGlobalDetail> assetSharedDetails = assetGlobal.getAssetSharedDetails();
++
++        // This is used as the new values for the AssetGlobalDetals values
+         List<AssetGlobalDetail> newDetails = new TypedArrayList(AssetGlobalDetail.class);
+-        AssetGlobalDetail newAssetGlobalDetail = null;
++        // AssetGlobalDetail newAssetGlobalDetail = null;
++
+         if (!assetSharedDetails.isEmpty() && !assetSharedDetails.get(0).getAssetGlobalUniqueDetails().isEmpty()) {
+ 
+             for (AssetGlobalDetail locationDetail : assetSharedDetails) {
++                // these are values in the new asset unique information tab under asset location
+                 List<AssetGlobalDetail> assetGlobalUniqueDetails = locationDetail.getAssetGlobalUniqueDetails();
++                for (AssetGlobalDetail detail : assetGlobalUniqueDetails) {
++                    
++                    // **Start AZ** KITT-1131 KevinMcO Get doc number and Asset Number and set on extension
++                    detail.setDocumentNumber(assetGlobal.getDocumentNumber());
++                    AssetGlobalDetailExtension assetGlobalDetailExtension = (AssetGlobalDetailExtension) detail.getExtension();
++                    assetGlobalDetailExtension.setDocumentNumber(assetGlobal.getDocumentNumber());
++                    assetGlobalDetailExtension.setCapitalAssetNumber(detail.getCapitalAssetNumber());
++                    // **End AZ** KITT-1131 KevinMcO
+ 
+-                for (AssetGlobalDetail detail : assetGlobalUniqueDetails) {
+                     // read from location and set it to detail
+                     if (ObjectUtils.isNotNull(locationDetail.getCampusCode())) {
+                         detail.setCampusCode(locationDetail.getCampusCode().toUpperCase());
+Index: financial-system/kfs/trunk/work/src/edu/arizona/kfs/fp/batch/service/impl/BankAdDocumentServiceImpl.java
+===================================================================
+--- financial-system/kfs/trunk/work/src/edu/arizona/kfs/fp/batch/service/impl/BankAdDocumentServiceImpl.java	(revision 11920)
++++ financial-system/kfs/trunk/work/src/edu/arizona/kfs/fp/batch/service/impl/BankAdDocumentServiceImpl.java	(revision 11921)
+@@ -21,10 +21,8 @@
+ import org.kuali.kfs.coa.businessobject.ObjectCode;
+ import org.kuali.kfs.coa.service.AccountingPeriodService;
+ import org.kuali.kfs.fp.businessobject.AdvanceDepositDetail;
+-import edu.arizona.kfs.fp.document.AdvanceDepositDocument;
+ import org.kuali.kfs.sys.businessobject.Bank;
+ import org.kuali.kfs.sys.businessobject.SourceAccountingLine;
+-import org.kuali.kfs.sys.businessobject.TargetAccountingLine;
+ import org.kuali.kfs.sys.context.SpringContext;
+ import org.kuali.kfs.sys.service.OptionsService;
+ import org.kuali.rice.kew.exception.WorkflowException;
+@@ -38,6 +36,7 @@
+ import edu.arizona.kfs.fp.batch.dataaccess.impl.TfileObj;
+ import edu.arizona.kfs.fp.batch.dataaccess.impl.BankParameterAccessServiceHelperImpl.ChartBankObjectCd;
+ import edu.arizona.kfs.fp.batch.service.AbstractBankTpService;
++import edu.arizona.kfs.fp.document.AdvanceDepositDocument;
+ 
+ public class BankAdDocumentServiceImpl extends AbstractBankTpService {
+ 
+@@ -103,7 +102,7 @@
+         AccountingPeriodService accountingPeriodService = SpringContext.getBean(AccountingPeriodService.class);
+         try {
+             deposit = (AdvanceDepositDocument) getDocumentService().getNewDocument(edu.arizona.kfs.fp.document.AdvanceDepositDocument.class);
+-            /*deposit = (AdvanceDepositDocument) getDocumentService().getNewDocument(AdvanceDepositDocument.class);*/
++            /* deposit = (AdvanceDepositDocument) getDocumentService().getNewDocument(AdvanceDepositDocument.class); */
+         }
+         catch (WorkflowException ex) {
+             ex.printStackTrace();
+@@ -115,12 +114,16 @@
+         AdvanceDepositDetail advanceDepositDetailObj = new AdvanceDepositDetail();
+         advanceDepositDetailObj.setFinancialDocumentBankCode(bankObj.getBankCode());
+         advanceDepositDetailObj.setFinancialDocumentAdvanceDepositDate(tfileObj.getValueDate());
+-        
++
+         String bankRefForRefNumb = tfileObj.getBankReference();
+         bankRefForRefNumb = (bankRefForRefNumb.length() > 10) ? bankRefForRefNumb.substring(0, 9) : bankRefForRefNumb;
+-        advanceDepositDetailObj.setFinancialDocumentAdvanceDepositReferenceNumber(bankRefForRefNumb);
+-        
+-        
++
++        if (StringUtils.isBlank(bankRefForRefNumb)) {
++            advanceDepositDetailObj.setFinancialDocumentAdvanceDepositReferenceNumber(tfileObj.getValueDate().toString());
++        }else {
++            advanceDepositDetailObj.setFinancialDocumentAdvanceDepositReferenceNumber(bankRefForRefNumb);
++        }
++
+         String bankRef = tfileObj.getBankReference();
+         String Description = tfileObj.getDescriptiveTxt6().toString() + tfileObj.getDescriptiveTxt7().toString();
+ 
+@@ -149,15 +152,15 @@
+         accountingLineObj.setChartOfAccountsCode(chartCarrier);
+         accountingLineObj.setAccountNumber(accountNumberCarrier);
+         accountingLineObj.setFinancialObjectCode(objectCodeCarrier);
+-        
++
+         accountingLineObj.setReferenceOriginCode(edu.arizona.kfs.fp.FPConstants.BANK_TRANS_ORIGIN_CODE);
+-        
++
+         SimpleDateFormat yearFormat = new SimpleDateFormat("MMddyyyy");
+         String refNumber = yearFormat.format(tfileObj.getValueDate());
+-        
++
+         accountingLineObj.setReferenceNumber(refNumber);
+         accountingLineObj.setReferenceTypeCode(edu.arizona.kfs.fp.FPConstants.DOCUMENT_TYPE_AD);
+-                
++
+         if (optionsService.getCurrentYearOptions().getFinancialObjectTypeAssetsCd().equals(objCodeObj.getFinancialObjectTypeCode()) || optionsService.getCurrentYearOptions().getFinObjTypeExpenditureexpCd().equals(objCodeObj.getFinancialObjectTypeCode())) {
+             amount = amount.multiply(new KualiDecimal(-1));
+         }
+Index: financial-system/kfs/trunk/work/src/edu/arizona/kfs/fp/batch/service/impl/BankCreditCardDocumentServiceImpl.java
+===================================================================
+--- financial-system/kfs/trunk/work/src/edu/arizona/kfs/fp/batch/service/impl/BankCreditCardDocumentServiceImpl.java	(revision 11920)
++++ financial-system/kfs/trunk/work/src/edu/arizona/kfs/fp/batch/service/impl/BankCreditCardDocumentServiceImpl.java	(revision 11921)
+@@ -18,27 +18,25 @@
+ import java.sql.Date;
+ import java.text.SimpleDateFormat;
+ 
+-import org.apache.ojb.broker.query.QueryFactory;
++import org.apache.commons.lang.StringUtils;
+ import org.kuali.kfs.coa.service.AccountingPeriodService;
+ import org.kuali.kfs.fp.businessobject.CreditCardDetail;
+ import org.kuali.kfs.fp.businessobject.CreditCardVendor;
+-import edu.arizona.kfs.fp.document.CreditCardReceiptDocument;
+ import org.kuali.kfs.sys.businessobject.Bank;
+ import org.kuali.kfs.sys.businessobject.SourceAccountingLine;
+ import org.kuali.kfs.sys.context.SpringContext;
++import org.kuali.kfs.sys.service.OptionsService;
+ import org.kuali.rice.kew.exception.WorkflowException;
+ import org.kuali.rice.kns.document.Document;
+ import org.kuali.rice.kns.util.KualiDecimal;
+ import org.kuali.rice.kns.util.ObjectUtils;
+ 
+ import edu.arizona.kfs.fp.FPConstants;
+-import edu.arizona.kfs.fp.batch.dataaccess.BankParameterAccessServiceHelper;
+ import edu.arizona.kfs.fp.batch.dataaccess.TfileHandlerServiceHelper;
+-import edu.arizona.kfs.fp.batch.dataaccess.impl.TfileHandlerServiceHelperImpl;
+ import edu.arizona.kfs.fp.batch.dataaccess.impl.TfileObj;
+ import edu.arizona.kfs.fp.batch.dataaccess.impl.BankParameterAccessServiceHelperImpl.ChartBankObjectCd;
+ import edu.arizona.kfs.fp.batch.service.AbstractBankTpService;
+-import org.kuali.kfs.sys.service.OptionsService;
++import edu.arizona.kfs.fp.document.CreditCardReceiptDocument;
+ 
+ public class BankCreditCardDocumentServiceImpl extends AbstractBankTpService {
+     
+@@ -104,7 +102,12 @@
+             
+             String bankRefForRefNumb = tfileObj.getBankReference();
+             bankRefForRefNumb = (bankRefForRefNumb.length() > 10) ? bankRefForRefNumb.substring(0, 9) : bankRefForRefNumb;
+-            creditCardDetail.setCreditCardDepositReferenceNumber(bankRefForRefNumb);
++                        
++            if (StringUtils.isBlank(bankRefForRefNumb)) {
++                creditCardDetail.setCreditCardDepositReferenceNumber(tfileObj.getValueDate().toString());
++            }else {
++                creditCardDetail.setCreditCardDepositReferenceNumber(bankRefForRefNumb);
++            }
+ 
+             KualiDecimal amount = tfileObj.getAmount();
+             String custRefNum = tfileObj.getCustRefNo();
+Index: financial-system/kfs/trunk/work/src/edu/arizona/kfs/module/cam/businessobject/datadictionary/AssetAwardHistory.xml
+===================================================================
+--- financial-system/kfs/trunk/work/src/edu/arizona/kfs/module/cam/businessobject/datadictionary/AssetAwardHistory.xml	(revision 11920)
++++ financial-system/kfs/trunk/work/src/edu/arizona/kfs/module/cam/businessobject/datadictionary/AssetAwardHistory.xml	(revision 11921)
+@@ -1,213 +1,214 @@
+ <beans xmlns="http://www.springframework.org/schema/beans"
+-	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+-	xmlns:dd="http://rice.kuali.org/dd"
+-	xmlns:p="http://www.springframework.org/schema/p"
+-	xsi:schemaLocation="http://www.springframework.org/schema/beans 
++ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:dd="http://rice.kuali.org/dd"
++ xmlns:p="http://www.springframework.org/schema/p"
++ xsi:schemaLocation="http://www.springframework.org/schema/beans 
+     http://www.springframework.org/schema/beans/spring-beans-2.0.xsd
+ 	http://rice.kuali.org/dd 
+ 	http://rice.kuali.org/dd/dd.xsd">
+ 
+-	<bean id="AssetAwardHistory" parent="AssetAwardHistory-parentBean" />
++ <bean id="AssetAwardHistory" parent="AssetAwardHistory-parentBean" />
+ 
+-	<bean id="AssetAwardHistory-parentBean" abstract="true"
+-		parent="BusinessObjectEntry">
+-		<property name="businessObjectClass"
+-			value="edu.arizona.kfs.module.cam.businessobject.AssetAwardHistory" />
+-		<property name="inquiryDefinition">
+-			<ref bean="AssetAwardHistory-inquiryDefinition" />
+-		</property>
+-		<property name="lookupDefinition">
+-			<ref bean="AssetAwardHistory-lookupDefinition" />
+-		</property>
+-		<property name="objectLabel" value="Asset Award History" />
+-		<property name="attributes">
+-			<list>
+-				<ref bean="AssetAwardHistory-chartOfAccountsCode" />
+-				<ref bean="AssetAwardHistory-accountNumber" />
+-				<ref bean="AssetAwardHistory-awardHistoryNumber" />
+-				<ref bean="AssetAwardHistory-capitalAssetNumber" />
+-				<ref bean="AssetAwardHistory-effectiveDate" />
+-				<ref bean="AssetAwardHistory-agencyNumber" />
+-				<ref bean="AssetAwardHistory-grantNumber" />
++ <bean id="AssetAwardHistory-parentBean" abstract="true"
++  parent="BusinessObjectEntry">
++  <property name="businessObjectClass"
++   value="edu.arizona.kfs.module.cam.businessobject.AssetAwardHistory" />
++  <property name="inquiryDefinition">
++   <ref bean="AssetAwardHistory-inquiryDefinition" />
++  </property>
++  <property name="lookupDefinition">
++   <ref bean="AssetAwardHistory-lookupDefinition" />
++  </property>
++  <property name="objectLabel" value="Asset Award History" />
++  <property name="attributes">
++   <list>
++    <ref bean="AssetAwardHistory-chartOfAccountsCode" />
++    <ref bean="AssetAwardHistory-accountNumber" />
++    <ref bean="AssetAwardHistory-awardHistoryNumber" />
++    <ref bean="AssetAwardHistory-capitalAssetNumber" />
++    <ref bean="AssetAwardHistory-effectiveDate" />
++    <ref bean="AssetAwardHistory-agencyNumber" />
++    <ref bean="AssetAwardHistory-grantNumber" />
+ 
+-				<ref bean="AssetAwardHistory-newCollectionRecord" />
+-			</list>
+-		</property>
+-			
+-	</bean>
++    <ref bean="AssetAwardHistory-newCollectionRecord" />
++   </list>
++  </property>
+ 
++ </bean>
+ 
+-	<bean id="AssetAwardHistory-awardHistoryNumber" parent="AssetAwardHistory-awardHistoryNumber-parentBean" />
+-	<bean id="AssetAwardHistory-awardHistoryNumber-parentBean" abstract="true" parent="AttributeDefinition">
+-		<property name="name" value="awardHistoryNumber" />
+-		<property name="forceUppercase" value="true" />
+-		<property name="label" value="Asset Award History Number" />
+-		<property name="shortLabel" value="Award Hist #" />
+-		<property name="maxLength" value="12" />
+-		<property name="validationPattern">
+-			<bean parent="NumericValidationPattern" />
+-		</property>
+-		<property name="control">
+-			<bean parent="TextControlDefinition" p:size="14" />
+-		</property>
+-	</bean>
+ 
+-	<bean id="AssetAwardHistory-capitalAssetNumber" parent="AssetAwardHistory-capitalAssetNumber-parentBean" />
+-	<bean id="AssetAwardHistory-capitalAssetNumber-parentBean"
+-		abstract="true" parent="Asset-capitalAssetNumber">
+-	</bean>
++ <bean id="AssetAwardHistory-awardHistoryNumber" parent="AssetAwardHistory-awardHistoryNumber-parentBean" />
++ <bean id="AssetAwardHistory-awardHistoryNumber-parentBean"
++  abstract="true" parent="AttributeDefinition">
++  <property name="name" value="awardHistoryNumber" />
++  <property name="forceUppercase" value="true" />
++  <property name="label" value="Asset Award History Number" />
++  <property name="shortLabel" value="Award Hist #" />
++  <property name="maxLength" value="12" />
++  <property name="validationPattern">
++   <bean parent="NumericValidationPattern" />
++  </property>
++  <property name="control">
++   <bean parent="TextControlDefinition" p:size="14" />
++  </property>
++ </bean>
+ 
+-	<bean id="AssetAwardHistory-effectiveDate" parent="AssetAwardHistory-effectiveDate-parentBean" />
+-	<bean id="AssetAwardHistory-effectiveDate-parentBean" abstract="true"
+-		parent="GenericAttributes-genericDate">
+-		<property name="name" value="effectiveDate" />
+-		<property name="label" value="Effective Date" />
+-		<property name="shortLabel" value="Date" />
+-	</bean>
+-	
+-	
+-		<bean id="AssetAwardHistory-chartOfAccountsCode" parent="AssetAwardHistory-chartOfAccountsCode-parentBean" />
+-	<bean id="AssetAwardHistory-chartOfAccountsCode-parentBean" abstract="true"
+-		parent="AttributeDefinition">
+-		 <property name="name" value="chartOfAccountsCode" /> 
+-		<property name="forceUppercase" value="false" />
+-		<property name="label" value="Chart Of Accounts Code" />
+-		<property name="shortLabel" value="Chart Of Accounts Code" />
+-		<property name="maxLength" value="2" />
+-		<property name="control" >
+-      <bean parent="SelectControlDefinition"
+-            p:valuesFinderClass="org.kuali.kfs.coa.businessobject.options.ChartValuesFinder"
+-            p:includeKeyInLabel="false" />
+-    </property>
+-		<property name="attributeSecurity">
+-			<bean parent="AttributeSecurity">
+-				<property name="readOnly" value="false" />
+-			</bean>
+-		</property>
+-	</bean>
+-	
+-	
+-	
+-		<bean id="AssetAwardHistory-accountNumber" parent="AssetAwardHistory-accountNumber-parentBean" />
+-	<bean id="AssetAwardHistory-accountNumber-parentBean" abstract="true"
+-		parent="AttributeDefinition">
+-		 <property name="name" value="accountNumber" /> 
+-		<property name="forceUppercase" value="false" />
+-		<property name="label" value="Account Number" />
+-		<property name="shortLabel" value="Account" />
+-		<property name="maxLength" value="7" />
+-		<property name="validationPattern">
+-			<bean parent="NumericValidationPattern" />
+-		</property>
+-		<property name="control">
+-			<bean parent="TextControlDefinition" p:size="7" />
+-		</property>
+-		
+-        <property name="attributeSecurity">
+-			<bean parent="AttributeSecurity">
+-				<property name="readOnly" value="false" />
+-			</bean>
+-		</property>
+-	</bean>
+-	
++ <bean id="AssetAwardHistory-capitalAssetNumber" parent="AssetAwardHistory-capitalAssetNumber-parentBean" />
++ <bean id="AssetAwardHistory-capitalAssetNumber-parentBean"
++  abstract="true" parent="Asset-capitalAssetNumber">
++ </bean>
+ 
+-	<bean id="AssetAwardHistory-agencyNumber" parent="AssetAwardHistory-agencyNumber-parentBean" />
+-	<bean id="AssetAwardHistory-agencyNumber-parentBean" abstract="true"
+-		parent="AttributeDefinition">
+-		 <property name="name" value="agencyNumber" /> 
+-		<property name="forceUppercase" value="false" />
+-		<property name="label" value="Agency Number" />
+-		<property name="shortLabel" value="Agency" />
+-		<property name="maxLength" value="5" />
+-		<property name="validationPattern">
+-			<bean parent="AnyCharacterValidationPattern" />
+-		</property>
+-		<property name="control">
+-			<bean parent="TextControlDefinition" p:size="7" />
+-		</property>
+-		<property name="attributeSecurity">
+-			<bean parent="AttributeSecurity">
+-				<property name="readOnly" value="false" />
+-			</bean>
+-		</property>
+-	</bean>
++ <bean id="AssetAwardHistory-effectiveDate" parent="AssetAwardHistory-effectiveDate-parentBean" />
++ <bean id="AssetAwardHistory-effectiveDate-parentBean" abstract="true"
++  parent="GenericAttributes-genericDate">
++  <property name="name" value="effectiveDate" />
++  <property name="label" value="Effective Date" />
++  <property name="shortLabel" value="Date" />
++ </bean>
+ 
+-	<bean id="AssetAwardHistory-grantNumber" parent="AssetAwardHistory-grantNumber-parentBean" />
+-	<bean id="AssetAwardHistory-grantNumber-parentBean" abstract="true"
+-		parent="AttributeDefinition">
+-		<property name="name" value="grantNumber" />
+-		<property name="forceUppercase" value="false" />
+-		<property name="label" value="Grant Number" />
+-		<property name="shortLabel" value="Grant #" />
+-		<property name="maxLength" value="20" />
+-		<property name="validationPattern">
+-			<bean parent="AnyCharacterValidationPattern" />
+-		</property>
+-		<property name="control">
+-			<bean parent="TextControlDefinition" p:size="20" />
+-		</property>
+-	</bean>
+ 
+-	<bean id="AssetAwardHistory-newCollectionRecord" parent="AssetAwardHistory-newCollectionRecord-parentBean" />
+-	<bean id="AssetAwardHistory-newCollectionRecord-parentBean"
+-		abstract="true" parent="GenericAttributes-newCollectionRecord">
+-	</bean>
++ <bean id="AssetAwardHistory-chartOfAccountsCode" parent="AssetAwardHistory-chartOfAccountsCode-parentBean" />
++ <bean id="AssetAwardHistory-chartOfAccountsCode-parentBean"
++  abstract="true" parent="AttributeDefinition">
++  <property name="name" value="chartOfAccountsCode" />
++  <property name="forceUppercase" value="false" />
++  <property name="label" value="Chart Of Accounts Code" />
++  <property name="shortLabel" value="Chart Of Accounts Code" />
++  <property name="maxLength" value="2" />
++  <property name="control">
++   <bean parent="SelectControlDefinition"
++    p:valuesFinderClass="org.kuali.kfs.coa.businessobject.options.ChartValuesFinder"
++    p:includeKeyInLabel="false" />
++  </property>
++  <property name="attributeSecurity">
++   <bean parent="AttributeSecurity">
++    <property name="readOnly" value="false" />
++   </bean>
++  </property>
++ </bean>
+ 
+-	<!-- Business Object Inquiry Definition -->
+ 
+-	<bean id="AssetAwardHistory-inquiryDefinition" parent="AssetAwardHistory-inquiryDefinition-parentBean" />
+-	<bean id="AssetAwardHistory-inquiryDefinition-parentBean" abstract="true" parent="InquiryDefinition">
+-		<property name="title" value="Asset Award History Inquiry" />
+-		<property name="inquirySections">
+-			<list>
+-				<bean parent="InquirySectionDefinition">
+-                    <property name="defaultOpen" value="false"/>
+-					<property name="title" value="Asset Award History Detail" />
+-					<property name="numberOfColumns" value="1" />
+-					<property name="inquiryFields">
+-						<list>
+-                           <bean parent="FieldDefinition" p:attributeName="chartOfAccountsCode" />
+-		                   <bean parent="FieldDefinition" p:attributeName="accountNumber" />					
+-                           <bean parent="FieldDefinition" p:attributeName="effectiveDate" />
+-						   <bean parent="FieldDefinition" p:attributeName="agencyNumber" />
+-						   <bean parent="FieldDefinition" p:attributeName="grantNumber" />
+-                           <bean parent="FieldDefinition" p:attributeName="capitalAssetNumber" />
+-						</list>
+-					</property>
+-				</bean>
+-			</list>
+-		</property>
+-	</bean>
+ 
+-	<!-- Business Object Lookup Definition -->
++ <bean id="AssetAwardHistory-accountNumber" parent="AssetAwardHistory-accountNumber-parentBean" />
++ <bean id="AssetAwardHistory-accountNumber-parentBean" abstract="true"
++  parent="AttributeDefinition">
++  <property name="name" value="accountNumber" />
++  <property name="forceUppercase" value="false" />
++  <property name="label" value="Account Number" />
++  <property name="shortLabel" value="Account" />
++  <property name="maxLength" value="7" />
++  <property name="validationPattern">
++   <bean parent="NumericValidationPattern" />
++  </property>
++  <property name="control">
++   <bean parent="TextControlDefinition" p:size="7" />
++  </property>
+ 
+-	<bean id="AssetAwardHistory-lookupDefinition" parent="AssetAwardHistory-lookupDefinition-parentBean" />
+-	<bean id="AssetAwardHistory-lookupDefinition-parentBean" abstract="true"
+-		parent="LookupDefinition">
+-		<property name="title" value="Asset Repair History Lookup" />
+-		<property name="defaultSort">
+-			<bean parent="SortDefinition">
+-			</bean>
+-		</property>
+-		<property name="lookupFields">
+-			<list>
+-				<bean parent="FieldDefinition" p:attributeName="capitalAssetNumber" />
+-				<bean parent="FieldDefinition" p:attributeName="effectiveDate" />
+-				<bean parent="FieldDefinition" p:attributeName="chartOfAccountsCode" />
+-				<bean parent="FieldDefinition" p:attributeName="accountNumber" />
+-				<bean parent="FieldDefinition" p:attributeName="agencyNumber" />
+-				<bean parent="FieldDefinition" p:attributeName="grantNumber" />
+-			</list>
+-		</property>
+-		<property name="resultFields">
+-			<list>
+-				<bean parent="FieldDefinition" p:attributeName="capitalAssetNumber" />
+-				<bean parent="FieldDefinition" p:attributeName="effectiveDate" />
+-				<bean parent="FieldDefinition" p:attributeName="chartOfAccountsCode" />
+-				<bean parent="FieldDefinition" p:attributeName="accountNumber" />
+-				<bean parent="FieldDefinition" p:attributeName="agencyNumber" />
+-				<bean parent="FieldDefinition" p:attributeName="grantNumber" />
+-			</list>
+-		</property>
+-	</bean>
++  <property name="attributeSecurity">
++   <bean parent="AttributeSecurity">
++    <property name="readOnly" value="false" />
++   </bean>
++  </property>
++ </bean>
++
++
++ <bean id="AssetAwardHistory-agencyNumber" parent="AssetAwardHistory-agencyNumber-parentBean" />
++ <bean id="AssetAwardHistory-agencyNumber-parentBean" abstract="true"
++  parent="AttributeDefinition">
++  <property name="name" value="agencyNumber" />
++  <property name="forceUppercase" value="false" />
++  <property name="label" value="Agency Number" />
++  <property name="shortLabel" value="Agency" />
++  <property name="maxLength" value="5" />
++  <property name="validationPattern">
++   <bean parent="AnyCharacterValidationPattern" />
++  </property>
++  <property name="control">
++   <bean parent="TextControlDefinition" p:size="7" />
++  </property>
++  <property name="attributeSecurity">
++   <bean parent="AttributeSecurity">
++    <property name="readOnly" value="false" />
++   </bean>
++  </property>
++ </bean>
++
++ <bean id="AssetAwardHistory-grantNumber" parent="AssetAwardHistory-grantNumber-parentBean" />
++ <bean id="AssetAwardHistory-grantNumber-parentBean" abstract="true"
++  parent="AttributeDefinition">
++  <property name="name" value="grantNumber" />
++  <property name="forceUppercase" value="false" />
++  <property name="label" value="Grant Number" />
++  <property name="shortLabel" value="Grant #" />
++  <property name="maxLength" value="20" />
++  <property name="validationPattern">
++   <bean parent="AnyCharacterValidationPattern" />
++  </property>
++  <property name="control">
++   <bean parent="TextControlDefinition" p:size="20" />
++  </property>
++ </bean>
++
++ <bean id="AssetAwardHistory-newCollectionRecord" parent="AssetAwardHistory-newCollectionRecord-parentBean" />
++ <bean id="AssetAwardHistory-newCollectionRecord-parentBean"
++  abstract="true" parent="GenericAttributes-newCollectionRecord">
++ </bean>
++
++ <!-- Business Object Inquiry Definition -->
++
++ <bean id="AssetAwardHistory-inquiryDefinition" parent="AssetAwardHistory-inquiryDefinition-parentBean" />
++ <bean id="AssetAwardHistory-inquiryDefinition-parentBean"
++  abstract="true" parent="InquiryDefinition">
++  <property name="title" value="Asset Award History Inquiry" />
++  <property name="inquirySections">
++   <list>
++    <bean parent="InquirySectionDefinition">
++     <property name="defaultOpen" value="false" />
++     <property name="title" value="Asset Award History Detail" />
++     <property name="numberOfColumns" value="1" />
++     <property name="inquiryFields">
++      <list>
++       <bean parent="FieldDefinition" p:attributeName="chartOfAccountsCode" />
++       <bean parent="FieldDefinition" p:attributeName="accountNumber" />
++       <bean parent="FieldDefinition" p:attributeName="effectiveDate" />
++       <bean parent="FieldDefinition" p:attributeName="agencyNumber" />
++       <bean parent="FieldDefinition" p:attributeName="grantNumber" />
++       <bean parent="FieldDefinition" p:attributeName="capitalAssetNumber" />
++      </list>
++     </property>
++    </bean>
++   </list>
++  </property>
++ </bean>
++
++ <!-- Business Object Lookup Definition -->
++
++ <bean id="AssetAwardHistory-lookupDefinition" parent="AssetAwardHistory-lookupDefinition-parentBean" />
++ <bean id="AssetAwardHistory-lookupDefinition-parentBean" abstract="true"
++  parent="LookupDefinition">
++  <property name="title" value="Asset Repair History Lookup" />
++  <property name="defaultSort">
++   <bean parent="SortDefinition">
++   </bean>
++  </property>
++  <property name="lookupFields">
++   <list>
++    <bean parent="FieldDefinition" p:attributeName="capitalAssetNumber" />
++    <bean parent="FieldDefinition" p:attributeName="effectiveDate" />
++    <bean parent="FieldDefinition" p:attributeName="chartOfAccountsCode" />
++    <bean parent="FieldDefinition" p:attributeName="accountNumber" />
++    <bean parent="FieldDefinition" p:attributeName="agencyNumber" />
++    <bean parent="FieldDefinition" p:attributeName="grantNumber" />
++   </list>
++  </property>
++  <property name="resultFields">
++   <list>
++    <bean parent="FieldDefinition" p:attributeName="capitalAssetNumber" />
++    <bean parent="FieldDefinition" p:attributeName="effectiveDate" />
++    <bean parent="FieldDefinition" p:attributeName="chartOfAccountsCode" />
++    <bean parent="FieldDefinition" p:attributeName="accountNumber" />
++    <bean parent="FieldDefinition" p:attributeName="agencyNumber" />
++    <bean parent="FieldDefinition" p:attributeName="grantNumber" />
++   </list>
++  </property>
++ </bean>
+ </beans>
+Index: financial-system/kfs/trunk/work/src/edu/arizona/kfs/module/cam/businessobject/datadictionary/AssetGlobalDetailExtension.xml
+===================================================================
+--- financial-system/kfs/trunk/work/src/edu/arizona/kfs/module/cam/businessobject/datadictionary/AssetGlobalDetailExtension.xml	(revision 0)
++++ financial-system/kfs/trunk/work/src/edu/arizona/kfs/module/cam/businessobject/datadictionary/AssetGlobalDetailExtension.xml	(revision 11921)
+@@ -0,0 +1,90 @@
++<beans xmlns="http://www.springframework.org/schema/beans"
++ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:p="http://www.springframework.org/schema/p"
++ xmlns:dd="http://rice.kuali.org/dd"
++ xsi:schemaLocation="
++http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-2.0.xsd
++http://rice.kuali.org/dd http://rice.kuali.org/dd/dd.xsd">
++
++ <bean id="AssetGlobalDetailExtension" parent="AssetGlobalDetailExtension-parentBean" />
++ <bean id="AssetGlobalDetailExtension-parentBean" abstract="true"
++  parent="BusinessObjectEntry">
++  <property name="businessObjectClass"
++   value="edu.arizona.kfs.module.cam.businessobject.AssetGlobalDetailExtension" />
++  <property name="objectLabel" value="AssetGlobalDetailExtension" />
++  <property name="attributes">
++   <list>
++
++    <ref bean="AssetGlobalDetailExtension-documentNumber" />
++    <ref bean="AssetGlobalDetailExtension-capitalAssetNumber" />
++    <ref bean="AssetGlobalDetailExtension-inventoryUnitCode" />
++    <ref bean="AssetGlobalDetailExtension-inventoryUnitOrganizationCode" />
++    <ref bean="AssetGlobalDetailExtension-inventoryUnitChartOfAccountsCode" />
++    <ref bean="AssetGlobalDetailExtension-versionNumber" />
++
++   </list>
++  </property>
++
++  <property name="relationships">
++   <list merge="true">
++
++    <dd:relationship objectAttribute="assetGlobalDetailObj">
++     <dd:primitiveAttribute source="documentNumber"
++      target="documentNumber" />
++     <dd:primitiveAttribute source="capitalAssetNumber"
++      target="capitalAssetNumber" />
++    </dd:relationship>
++
++    <dd:relationship objectAttribute="assetInvUnitObj">
++     <dd:primitiveAttribute source="inventoryUnitCode"
++      target="inventoryUnitCode" />
++     <dd:primitiveAttribute source="inventoryUnitChartOfAccountsCode"
++      target="chartOfAccountsCode" />
++     <dd:primitiveAttribute source="inventoryUnitOrganizationCode"
++      target="organizationCode" />
++    </dd:relationship>
++
++   </list>
++  </property>
++
++
++
++ </bean>
++
++ <bean id="AssetGlobalDetailExtension-documentNumber" parent="AssetGlobalDetailExtension-documentNumber-parentBean" />
++ <dd:boAttributeRef id="AssetGlobalDetailExtension-documentNumber-parentBean"
++  abstract="true" parent="AssetGlobal-documentNumber"
++  attributeName="assetGlobalDetailObj.documentNumber" />
++
++ <bean id="AssetGlobalDetailExtension-capitalAssetNumber" parent="AssetGlobalDetailExtension-capitalAssetNumber-parentBean" />
++ <dd:boAttributeRef id="AssetGlobalDetailExtension-capitalAssetNumber-parentBean"
++  abstract="true" parent="Asset-capitalAssetNumber-parentBean"
++  attributeName="assetGlobalDetailObj.capitalAssetNumber" />
++
++ <bean id="AssetGlobalDetailExtension-inventoryUnitCode" parent="AssetGlobalDetailExtension-inventoryUnitCode-parentBean" />
++ <dd:boAttributeRef id="AssetGlobalDetailExtension-inventoryUnitCode-parentBean"
++  abstract="true" parent="AssetInventoryUnit-inventoryUnitCode-parentBean"
++  attributeName="AssetInvUnitObj.inventoryUnitCode" label="Inventory Unit Code"
++  shortLabel="Inv Unit Code" />
++
++ <bean id="AssetGlobalDetailExtension-inventoryUnitChartOfAccountsCode"
++  parent="AssetGlobalDetailExtension-inventoryUnitChartOfAccountsCode-parentBean" />
++ <bean id="AssetGlobalDetailExtension-inventoryUnitChartOfAccountsCode-parentBean"
++  abstract="true" parent="Chart-chartOfAccountsCode-parentBean">
++  <property name="name" value="inventoryUnitChartOfAccountsCode" />
++  <property name="label" value="inventory Unit Chart Of Accounts Code" />
++  <property name="forceUppercase" value="true" />
++ </bean>
++
++ <bean id="AssetGlobalDetailExtension-inventoryUnitOrganizationCode" parent="AssetGlobalDetailExtension-inventoryUnitOrganizationCode-parentBean" />
++ <bean id="AssetGlobalDetailExtension-inventoryUnitOrganizationCode-parentBean"
++  abstract="true" parent="Organization-organizationCode-parentBean">
++  <property name="name" value="inventoryUnitOrganizationCode" />
++  <property name="label" value="Inventory Unit Organization Code" />
++  <property name="forceUppercase" value="true" />
++ </bean>
++
++ 
++  <bean id="AssetGlobalDetailExtension-versionNumber" parent="AttributeReferenceDummy-versionNumber-parentBean" />
++
++
++</beans>
+\ No newline at end of file
+Index: financial-system/kfs/trunk/work/src/edu/arizona/kfs/module/cam/businessobject/datadictionary/AssetGlobalDetail.xml
+===================================================================
+--- financial-system/kfs/trunk/work/src/edu/arizona/kfs/module/cam/businessobject/datadictionary/AssetGlobalDetail.xml	(revision 0)
++++ financial-system/kfs/trunk/work/src/edu/arizona/kfs/module/cam/businessobject/datadictionary/AssetGlobalDetail.xml	(revision 11921)
+@@ -0,0 +1,62 @@
++<?xml version="1.0" encoding="UTF-8"?><beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:p="http://www.springframework.org/schema/p" xmlns:dd="http://rice.kuali.org/dd" xsi:schemaLocation=" http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-2.0.xsd http://rice.kuali.org/dd http://rice.kuali.org/dd/dd.xsd">
++<!--
++ Copyright 2008-2009 The Kuali Foundation
++ 
++ Licensed under the Educational Community License, Version 2.0 (the "License");
++ you may not use this file except in compliance with the License.
++ You may obtain a copy of the License at
++ 
++ http://www.opensource.org/licenses/ecl2.php
++ 
++ Unless required by applicable law or agreed to in writing, software
++ distributed under the License is distributed on an "AS IS" BASIS,
++ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ See the License for the specific language governing permissions and
++ limitations under the License.
++-->
++
++  <bean id="AssetGlobalDetail" parent="AssetGlobalDetail-parentBean">
++    <property name="attributes">
++      <list merge = "true">
++      
++      <ref bean="AssetGlobalDetail-inventoryUnitCode" />
++    <ref bean="AssetGlobalDetail-inventoryUnitChartOfAccountsCode" />
++    <ref bean="AssetGlobalDetail-inventoryUnitOrganizationCode" />
++       
++      </list>
++    </property>
++    <property name="relationships">
++      <list merge = "true">
++      
++      <dd:relationship objectAttribute="extension.assetInvUnitObj">
++     <dd:primitiveAttribute source="extension.inventoryUnitCode"
++      target="inventoryUnitCode" />
++      <dd:primitiveAttribute source="extension.inventoryUnitChartOfAccountsCode"
++      target="chartOfAccountsCode" />
++      <dd:primitiveAttribute source="extension.inventoryUnitOrganizationCode"
++      target="organizationCode" />
++    </dd:relationship>
++      
++      </list>
++    </property>
++  </bean>
++
++<!-- Attribute Definitions -->
++  
++  <bean id="AssetGlobalDetail-inventoryUnitCode" parent="AssetGlobalDetail-inventoryUnitCode-parentBean" />
++ <dd:boAttributeRef id="AssetGlobalDetail-inventoryUnitCode-parentBean"
++  abstract="true" parent="AssetGlobalDetailExtension-inventoryUnitCode-parentBean"
++  attributeName="extension.inventoryUnitCode" />
++
++ <bean id="AssetGlobalDetail-inventoryUnitChartOfAccountsCode" parent="AssetGlobalDetail-inventoryUnitChartOfAccountsCode-parentBean" />
++ <dd:boAttributeRef id="AssetGlobalDetail-inventoryUnitChartOfAccountsCode-parentBean"
++  abstract="true" parent="AssetGlobalDetailExtension-inventoryUnitChartOfAccountsCode-parentBean"
++  attributeName="extension.inventoryUnitChartOfAccountsCode" />
++
++ <bean id="AssetGlobalDetail-inventoryUnitOrganizationCode" parent="AssetGlobalDetail-inventoryUnitOrganizationCode-parentBean" />
++ <dd:boAttributeRef id="AssetGlobalDetail-inventoryUnitOrganizationCode-parentBean"
++  abstract="true" parent="AssetGlobalDetailExtension-inventoryUnitOrganizationCode-parentBean"
++  attributeName="extension.inventoryUnitOrganizationCode" />
++  
++</beans>
++
+Index: financial-system/kfs/trunk/work/src/edu/arizona/kfs/module/cam/businessobject/datadictionary/AssetExtension.xml
+===================================================================
+--- financial-system/kfs/trunk/work/src/edu/arizona/kfs/module/cam/businessobject/datadictionary/AssetExtension.xml	(revision 11920)
++++ financial-system/kfs/trunk/work/src/edu/arizona/kfs/module/cam/businessobject/datadictionary/AssetExtension.xml	(revision 11921)
+@@ -1,30 +1,101 @@
+ <beans xmlns="http://www.springframework.org/schema/beans"
+-	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:p="http://www.springframework.org/schema/p"
+-	xmlns:dd="http://rice.kuali.org/dd"
+-	xsi:schemaLocation="
++ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:p="http://www.springframework.org/schema/p"
++ xmlns:dd="http://rice.kuali.org/dd"
++ xsi:schemaLocation="
+ http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-2.0.xsd
+ http://rice.kuali.org/dd http://rice.kuali.org/dd/dd.xsd">
+ 
+-	<bean id="AssetExtension" parent="AssetExtension-parentBean" />
++ <bean id="AssetExtension" parent="AssetExtension-parentBean" />
++ <bean id="AssetExtension-parentBean" abstract="true"
++  parent="BusinessObjectEntry">
++  <property name="businessObjectClass"
++   value="edu.arizona.kfs.module.cam.businessobject.AssetExtension" />
++  <property name="objectLabel" value="AssetExtension" />
++  <property name="attributes">
++   <list>
++    <ref bean="AssetExtension-versionNumber" />
++    <ref bean="AssetExtension-capitalAssetNumber" />
++    <ref bean="AssetExtension-inventoryUnitCode" />
++    <ref bean="AssetExtension-inventoryUnitOrganizationCode" />
++    <ref bean="AssetExtension-inventoryUnitChartOfAccountsCode" />
++    <ref bean="AssetExtension-organizationOwnerAccountOrganizationCode" />
++    <ref bean="AssetExtension-organizationOwnerAccountChartOfAccountsCode" />
++  </list>
++  </property>
++  
++  
++  <property name="relationships">
++   <list >
+ 
+-	<bean id="AssetExtension-parentBean" abstract="true"
+-		parent="BusinessObjectEntry">
+-		<property name="businessObjectClass"
+-			value="edu.arizona.kfs.module.cam.businessobject.AssetExtension" />
+-		<property name="objectLabel" value="Asset" />
+-		<property name="attributes">
+-			<list>
+-				<ref bean="AssetExtension-versionNumber" />
+-				<ref bean="AssetExtension-capitalAssetNumber" />
+-			</list>
+-		</property>
+-	</bean>
++       
++    <dd:relationship objectAttribute="assetObj">
++     <dd:primitiveAttribute source="capitalAssetNumber"
++      target="capitalAssetNumber" />
++    </dd:relationship>
++    
++   
++     <dd:relationship objectAttribute="assetInvUnitObj">
++     <dd:primitiveAttribute source="inventoryUnitCode"
++      target="inventoryUnitCode" />
++      <dd:primitiveAttribute source="inventoryUnitChartOfAccountsCode"
++      target="chartOfAccountsCode" />
++      <dd:primitiveAttribute source="inventoryUnitOrganizationCode"
++      target="organizationCode" />
++     </dd:relationship>
+ 
+-	<bean id="AssetExtension-versionNumber" parent="AttributeReferenceDummy-versionNumber-parentBean" />
++   
++   
++   </list>
++  </property>
++  
++  
++  
++ </bean>
+ 
+-	<bean id="AssetExtension-capitalAssetNumber" parent="AssetExtension-capitalAssetNumber-parentBean" />
+-	<dd:boAttributeRef id="AssetExtension-capitalAssetNumber-parentBean"
+-		abstract="true" parent="Asset-capitalAssetNumber-parentBean"
+-		attributeName="assetObj.capitalAssetNumber" />
+-			
+-	</beans>
+\ No newline at end of file
++ <bean id="AssetExtension-versionNumber" parent="AttributeReferenceDummy-versionNumber-parentBean" />
++ 
++ <bean id="AssetExtension-capitalAssetNumber" parent="AssetExtension-capitalAssetNumber-parentBean" />
++ <dd:boAttributeRef id="AssetExtension-capitalAssetNumber-parentBean"
++  abstract="true" parent="Asset-capitalAssetNumber-parentBean"
++  attributeName="assetObj.capitalAssetNumber" />
++  
++ <bean id="AssetExtension-inventoryUnitCode" parent="AssetExtension-inventoryUnitCode-parentBean" />
++	<dd:boAttributeRef id="AssetExtension-inventoryUnitCode-parentBean"
++		abstract="true" parent="AssetInventoryUnit-inventoryUnitCode-parentBean"
++		attributeName="AssetInvUnitObj.inventoryUnitCode" label="Inventory Unit Code" 
++		shortLabel="Inv Unit Code" />
++  
++  <bean id="AssetExtension-inventoryUnitChartOfAccountsCode" parent="AssetExtension-inventoryUnitChartOfAccountsCode-parentBean" />
++ <bean id="AssetExtension-inventoryUnitChartOfAccountsCode-parentBean" abstract="true"
++  parent="Chart-chartOfAccountsCode-parentBean">
++  <property name="name" value="inventoryUnitChartOfAccountsCode" />
++  <property name="label" value="inventory Unit Chart Of Accounts Code" />
++  <property name="forceUppercase" value="true" />
++ </bean>
++ 
++ <bean id="AssetExtension-inventoryUnitOrganizationCode" parent="AssetExtension-inventoryUnitOrganizationCode-parentBean" />
++ <bean id="AssetExtension-inventoryUnitOrganizationCode-parentBean" abstract="true"
++  parent="Organization-organizationCode-parentBean">
++ <property name="name" value="inventoryUnitOrganizationCode" />
++  <property name="label" value="Inventory Unit Organization Code" />
++  <property name="forceUppercase" value="true" />
++ </bean>
++ 
++ <bean id="AssetExtension-organizationOwnerAccountOrganizationCode" parent="AssetExtension-organizationOwnerAccountOrganizationCode-parentBean" />
++ <bean id="AssetExtension-organizationOwnerAccountOrganizationCode-parentBean" abstract="true"
++  parent="Organization-organizationCode-parentBean">
++<property name="name" value="organizationOwnerAccountOrganizationCode" />
++  <property name="label" value="Organization Owner Account Organization Code" />
++  <property name="forceUppercase" value="true" />
++ </bean>
++
++  <bean id="AssetExtension-organizationOwnerAccountChartOfAccountsCode" parent="AssetExtension-organizationOwnerAccountChartOfAccountsCode-parentBean" />
++ <bean id="AssetExtension-organizationOwnerAccountChartOfAccountsCode-parentBean" abstract="true"
++  parent="Chart-chartOfAccountsCode-parentBean">
++<property name="name" value="organizationOwnerAccountChartOfAccountsCode" />
++  <property name="label" value="Organization Owner Chart Of Accounts Code" />
++  <property name="forceUppercase" value="true" />
++ </bean>
++ 
++ 
++</beans>
+\ No newline at end of file
+Index: financial-system/kfs/trunk/work/src/edu/arizona/kfs/module/cam/businessobject/datadictionary/AssetInventoryUnit.xml
+===================================================================
+--- financial-system/kfs/trunk/work/src/edu/arizona/kfs/module/cam/businessobject/datadictionary/AssetInventoryUnit.xml	(revision 0)
++++ financial-system/kfs/trunk/work/src/edu/arizona/kfs/module/cam/businessobject/datadictionary/AssetInventoryUnit.xml	(revision 11921)
+@@ -0,0 +1,185 @@
++<beans xmlns="http://www.springframework.org/schema/beans"
++ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:dd="http://rice.kuali.org/dd"
++ xmlns:p="http://www.springframework.org/schema/p"
++ xsi:schemaLocation="http://www.springframework.org/schema/beans 
++ http://www.springframework.org/schema/beans/spring-beans-2.0.xsd
++ http://rice.kuali.org/dd 
++ http://rice.kuali.org/dd/dd.xsd">
++
++ <bean id="AssetInventoryUnit" parent="AssetInventoryUnit-parentBean" />
++ <bean id="AssetInventoryUnit-parentBean" abstract="true"
++  parent="BusinessObjectEntry">
++  <property name="businessObjectClass"
++   value="edu.arizona.kfs.module.cam.businessobject.AssetInventoryUnit" />
++  <property name="inquiryDefinition">
++   <ref bean="AssetInventoryUnit-inquiryDefinition" />
++  </property>
++  <property name="lookupDefinition">
++   <ref bean="AssetInventoryUnit-lookupDefinition" />
++  </property>
++  <property name="objectLabel" value="Asset Inventory Unit" />
++  <property name="attributes">
++   <list>
++    <ref bean="AssetInventoryUnit-inventoryUnitCode" />
++    <ref bean="AssetInventoryUnit-inventoryUnitName" />
++    <ref bean="AssetInventoryUnit-chartOfAccountsCode" />
++    <ref bean="AssetInventoryUnit-organizationCode" />
++    <ref bean="AssetInventoryUnit-active" />
++   </list>
++  </property>
++
++
++  <property name="relationships">
++   <list merge="true">
++    <dd:relationship objectAttribute="orgObj">
++     <dd:primitiveAttribute source="orgObj.chartOfAccountsCode"
++      target="chartOfAccountsCode" />
++     <dd:primitiveAttribute source="orgObj.organizationCode"
++      target="organizationCode" />
++    </dd:relationship>
++   </list>
++  </property>
++
++
++ </bean>
++
++
++ <bean id="AssetInventoryUnit-inventoryUnitCode" parent="AssetInventoryUnit-inventoryUnitCode-parentBean" />
++ <bean id="AssetInventoryUnit-inventoryUnitCode-parentBean"
++  abstract="true" parent="AttributeDefinition">
++  <property name="name" value="inventoryUnitCode" />
++  <property name="forceUppercase" value="true" />
++  <property name="label" value="Inventory Unit Code" />
++  <property name="shortLabel" value="Inv Unit #" />
++  <property name="maxLength" value="2" />
++  <property name="validationPattern">
++   <bean parent="NumericValidationPattern" />
++  </property>
++  <property name="required" value="true" />
++  <property name="control">
++   <bean parent="TextControlDefinition" p:size="2" />
++  </property>
++ </bean>
++
++ <bean id="AssetInventoryUnit-inventoryUnitName" parent="AssetInventoryUnit-inventoryUnitName-parentBean" />
++ <bean id="AssetInventoryUnit-inventoryUnitName-parentBean"
++  abstract="true" parent="AttributeDefinition">
++  <property name="name" value="inventoryUnitName" />
++  <property name="forceUppercase" value="false" />
++  <property name="label" value="Inventory Unit Name" />
++  <property name="shortLabel" value="Inv Unit Name" />
++  <property name="maxLength" value="40" />
++  <property name="validationPattern">
++   <bean parent="AnyCharacterValidationPattern" p:allowWhitespace="true" />
++  </property>
++  <property name="required" value="true" />
++  <property name="control">
++   <bean parent="TextControlDefinition" p:size="40" />
++  </property>
++ </bean>
++
++ <bean id="AssetInventoryUnit-chartOfAccountsCode" parent="AssetInventoryUnit-chartOfAccountsCode-parentBean" />
++ <bean id="AssetInventoryUnit-chartOfAccountsCode-parentBean"
++  abstract="true" parent="AttributeDefinition">
++  <property name="name" value="chartOfAccountsCode" />
++  <property name="label" value="Chart Of Accounts Code" />
++  <property name="forceUppercase" value="false" />
++  <property name="shortLabel" value="COA Code" />
++  <property name="maxLength" value="2" />
++  <property name="control">
++   <bean parent="SelectControlDefinition"
++    p:valuesFinderClass="org.kuali.kfs.coa.businessobject.options.ChartValuesFinder"
++    p:includeKeyInLabel="false" />
++  </property>
++  <property name="attributeSecurity">
++   <bean parent="AttributeSecurity">
++    <property name="readOnly" value="false" />
++   </bean>
++  </property>
++ </bean>
++
++ <bean id="AssetInventoryUnit-organizationCode" parent="AssetInventoryUnit-organizationCode-parentBean" />
++ <bean id="AssetInventoryUnit-organizationCode-parentBean"
++  abstract="true" parent="AttributeDefinition">
++  <property name="name" value="organizationCode" />
++  <property name="label" value="Organization Code" />
++  <property name="forceUppercase" value="true" />
++  <property name="shortLabel" value="Org CD" />
++  <property name="maxLength" value="4" />
++  <property name="validationPattern">
++   <bean parent="AnyCharacterValidationPattern" />
++  </property>
++  <property name="required" value="true" />
++  <property name="control">
++   <bean parent="TextControlDefinition" p:size="4" />
++  </property>
++ </bean>
++
++ <bean id="AssetInventoryUnit-active" parent="AssetInventoryUnit-active-parentBean" />
++ <bean id="AssetInventoryUnit-active-parentBean" abstract="true"
++  parent="AttributeDefinition">
++  <property name="name" value="active" />
++  <property name="forceUppercase" value="true" />
++  <property name="label" value="Active" />
++  <property name="shortLabel" value="Active" />
++  <property name="maxLength" value="1" />
++  <property name="control">
++   <bean parent="CheckboxControlDefinition" />
++  </property>
++ </bean>
++
++ <!-- Business Object Inquiry Definition -->
++
++ <bean id="AssetInventoryUnit-inquiryDefinition" parent="AssetInventoryUnit-inquiryDefinition-parentBean" />
++ <bean id="AssetInventoryUnit-inquiryDefinition-parentBean"
++  abstract="true" parent="InquiryDefinition">
++  <property name="title" value="Asset Inventory Unit" />
++  <property name="inquirySections">
++   <list>
++    <bean parent="InquirySectionDefinition">
++     <property name="defaultOpen" value="false" />
++     <property name="title" value="Asset Inventory Unit Detail" />
++     <property name="numberOfColumns" value="1" />
++     <property name="inquiryFields">
++      <list>
++       <bean parent="FieldDefinition" p:attributeName="inventoryUnitCode" />
++       <bean parent="FieldDefinition" p:attributeName="inventoryUnitName" />
++       <bean parent="FieldDefinition" p:attributeName="chartOfAccountsCode" />
++       <bean parent="FieldDefinition" p:attributeName="organizationCode" />
++       <bean parent="FieldDefinition" p:attributeName="active" />
++      </list>
++     </property>
++    </bean>
++   </list>
++  </property>
++ </bean>
++
++ <!-- Business Object Lookup Definition -->
++
++ <bean id="AssetInventoryUnit-lookupDefinition" parent="AssetInventoryUnit-lookupDefinition-parentBean" />
++ <bean id="AssetInventoryUnit-lookupDefinition-parentBean"
++  abstract="true" parent="LookupDefinition">
++  <property name="title" value="Asset Inventory Unit Lookup" />
++  <property name="defaultSort">
++   <bean parent="SortDefinition">
++   </bean>
++  </property>
++  <property name="lookupFields">
++   <list>
++    <bean parent="FieldDefinition" p:attributeName="inventoryUnitCode" />
++    <bean parent="FieldDefinition" p:attributeName="chartOfAccountsCode" />
++    <bean parent="FieldDefinition" p:attributeName="organizationCode" />
++    <bean parent="FieldDefinition" p:attributeName="active" />
++   </list>
++  </property>
++  <property name="resultFields">
++   <list>
++    <bean parent="FieldDefinition" p:attributeName="inventoryUnitCode" />
++    <bean parent="FieldDefinition" p:attributeName="inventoryUnitName" />
++    <bean parent="FieldDefinition" p:attributeName="chartOfAccountsCode" />
++    <bean parent="FieldDefinition" p:attributeName="organizationCode" />
++    <bean parent="FieldDefinition" p:attributeName="active" />
++   </list>
++  </property>
++ </bean>
++</beans>
+Index: financial-system/kfs/trunk/work/src/edu/arizona/kfs/module/cam/businessobject/datadictionary/Asset.xml
+===================================================================
+--- financial-system/kfs/trunk/work/src/edu/arizona/kfs/module/cam/businessobject/datadictionary/Asset.xml	(revision 11920)
++++ financial-system/kfs/trunk/work/src/edu/arizona/kfs/module/cam/businessobject/datadictionary/Asset.xml	(revision 11921)
+@@ -1,44 +1,553 @@
+ <beans xmlns="http://www.springframework.org/schema/beans"
+-	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:p="http://www.springframework.org/schema/p"
+-	xmlns:dd="http://rice.kuali.org/dd"
+-	xsi:schemaLocation="http://www.springframework.org/schema/beans
++ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:p="http://www.springframework.org/schema/p"
++ xmlns:dd="http://rice.kuali.org/dd"
++ xsi:schemaLocation="http://www.springframework.org/schema/beans
+         http://www.springframework.org/schema/beans/spring-beans-2.0.xsd
+         http://rice.kuali.org/dd http://rice.kuali.org/dd/dd.xsd">
+-        
+ 
+-	<!-- Business Object Inquiry Definition -->
++ <bean id="Asset" parent="Asset-parentBean">
++  <property name="attributes">
++   <list merge="true">
++    <ref bean="Asset-inventoryUnitCode" />
++    <ref bean="Asset-inventoryUnitChartOfAccountsCode" />
++    <ref bean="Asset-inventoryUnitOrganizationCode" />
++    <ref bean="Asset-organizationOwnerAccountChartOfAccountsCode" />
++    <ref bean="Asset-organizationOwnerAccountOrganizationCode" />
++    
+ 
+-	<bean id="Asset-inquiryDefinition" parent="Asset-inquiryDefinition-parentBean">
+-		<property name="inquirySections">
+-			<list merge="true">
+-				<bean parent="InquirySectionDefinition">
+-					<property name="title" value="Asset Award History" />
+-					<property name="defaultOpen" value="false" />
+-					<property name="numberOfColumns" value="1" />
+-					<property name="inquiryFields">
+-						<list>
+-							<bean parent="InquiryCollectionDefinition">
+-								<property name="attributeName" value="extension.assetAwardHistory" />
+-								<property name="businessObjectClass"
+-									value="edu.arizona.kfs.module.cam.businessobject.AssetAwardHistory" />
+-                                <property name="numberOfColumns" value="2" />
+-								<property name="inquiryFields">
+-									<list>
+-                                        <bean parent="FieldDefinition" p:attributeName="chartOfAccountsCode" />
+-										<bean parent="FieldDefinition" p:attributeName="accountNumber" />
+-                                        <bean parent="FieldDefinition" p:attributeName="effectiveDate" />
+-										<bean parent="FieldDefinition" p:attributeName="agencyNumber" />
+-										<bean parent="FieldDefinition" p:attributeName="grantNumber" />
+ 
+-									</list>
+-								</property>
+-							</bean>
+-						</list>
+-					</property>
+-				</bean>
++   </list>
++  </property>
+ 
+-			</list>
+-		</property>
+-	</bean>
++  <property name="relationships">
++   <list merge="true">
+ 
++    <dd:relationship objectAttribute="extension.assetInvUnitObj">
++     <dd:primitiveAttribute source="extension.inventoryUnitCode"
++      target="inventoryUnitCode" />
++      <dd:primitiveAttribute source="extension.inventoryUnitChartOfAccountsCode"
++      target="chartOfAccountsCode" />
++      <dd:primitiveAttribute source="extension.inventoryUnitOrganizationCode"
++      target="organizationCode" />
++    </dd:relationship>
++
++
++
++   </list>
++  </property>
++ </bean>
++
++ <!--  Attributes added for extended attribute tab -->
++
++ <bean id="Asset-inventoryUnitCode" parent="Asset-inventoryUnitCode-parentBean" />
++ <dd:boAttributeRef id="Asset-inventoryUnitCode-parentBean"
++  abstract="true" parent="AssetExtension-inventoryUnitCode-parentBean"
++  attributeName="extension.inventoryUnitCode" />
++
++ <bean id="Asset-inventoryUnitChartOfAccountsCode" parent="Asset-inventoryUnitChartOfAccountsCode-parentBean" />
++ <dd:boAttributeRef id="Asset-inventoryUnitChartOfAccountsCode-parentBean"
++  abstract="true" parent="AssetExtension-inventoryUnitChartOfAccountsCode-parentBean"
++  attributeName="extension.inventoryUnitChartOfAccountsCode" />
++
++ <bean id="Asset-inventoryUnitOrganizationCode" parent="Asset-inventoryUnitOrganizationCode-parentBean" />
++ <dd:boAttributeRef id="Asset-inventoryUnitOrganizationCode-parentBean"
++  abstract="true" parent="AssetExtension-inventoryUnitOrganizationCode-parentBean"
++  attributeName="extension.inventoryUnitOrganizationCode" />
++  
++  <bean id="Asset-organizationOwnerAccountChartOfAccountsCode" parent="Asset-organizationOwnerAccountChartOfAccountsCode-parentBean" />
++ <dd:boAttributeRef id="Asset-organizationOwnerAccountChartOfAccountsCode-parentBean"
++  abstract="true" parent="AssetExtension-organizationOwnerAccountChartOfAccountsCode-parentBean"
++  attributeName="extension.organizationOwnerAccountChartOfAccountsCode" />
++  
++  <bean id="Asset-organizationOwnerAccountOrganizationCode" parent="Asset-organizationOwnerAccountOrganizationCode-parentBean" />
++ <dd:boAttributeRef id="Asset-organizationOwnerAccountOrganizationCode-parentBean"
++  abstract="true" parent="AssetExtension-organizationOwnerAccountOrganizationCode-parentBean"
++  attributeName="extension.organizationOwnerAccountOrganizationCode" />
++
++
++
++ <!-- Business Object Inquiry Definition -->
++
++ <!-- START -->
++
++ <bean id="Asset-inquiryDefinition" parent="Asset-inquiryDefinition-parentBean" />
++ <bean id="Asset-inquiryDefinition-parentBean" abstract="true"
++  parent="InquiryDefinition">
++  <property name="title" value="Asset Inquiry" />
++  <property name="inquirySections">
++   <list>
++    <bean parent="InquirySectionDefinition">
++     <property name="defaultOpen" value="false" />
++     <property name="title" value="Asset Detail Information" />
++     <property name="numberOfColumns" value="1" />
++     <property name="inquiryFields">
++      <list>
++       <bean parent="FieldDefinition" p:attributeName="capitalAssetNumber" />
++       <bean parent="FieldDefinition" p:attributeName="organizationOwnerChartOfAccountsCode" />
++       <bean parent="FieldDefinition" p:attributeName="organizationOwnerAccountNumber" />
++       <bean parent="FieldDefinition" p:attributeName="organizationOwnerAccount.organizationCode" />
++       <bean parent="FieldDefinition" p:attributeName="agencyNumber" />
++       <bean parent="FieldDefinition" p:attributeName="acquisitionTypeCode" />
++       <bean parent="FieldDefinition" p:attributeName="inventoryStatus.inventoryStatusCode" />
++       <bean parent="FieldDefinition" p:attributeName="conditionCode" />
++       <bean parent="FieldDefinition" p:attributeName="capitalAssetDescription" />
++       <bean parent="FieldDefinition" p:attributeName="capitalAssetTypeCode" />
++       <bean parent="FieldDefinition" p:attributeName="vendorName" />
++       <bean parent="FieldDefinition" p:attributeName="manufacturerName" />
++       <bean parent="FieldDefinition" p:attributeName="manufacturerModelNumber" />
++       <bean parent="FieldDefinition" p:attributeName="serialNumber" />
++       <bean parent="FieldDefinition" p:attributeName="campusTagNumber" />
++       <bean parent="FieldDefinition" p:attributeName="oldTagNumber" />
++       <bean parent="FieldDefinition" p:attributeName="governmentTagNumber" />
++       <bean parent="FieldDefinition" p:attributeName="nationalStockNumber" />
++       <bean parent="FieldDefinition" p:attributeName="lastInventoryDate" />
++       <bean parent="FieldDefinition" p:attributeName="createDate" />
++       <bean parent="FieldDefinition" p:attributeName="financialDocumentPostingYear" />
++       <bean parent="FieldDefinition" p:attributeName="financialDocumentPostingPeriodCode" />
++       <bean parent="FieldDefinition" p:attributeName="capitalAssetInServiceDate" />
++       <bean parent="FieldDefinition" p:attributeName="depreciationDate" />
++       <bean parent="FieldDefinition" p:attributeName="totalCostAmount" />
++       <bean parent="FieldDefinition" p:attributeName="federalContribution" />
++      </list>
++     </property>
++    </bean>
++    <bean parent="InquirySectionDefinition">
++     <property name="title" value="Asset Location" />
++     <property name="defaultOpen" value="false" />
++     <property name="numberOfColumns" value="1" />
++     <property name="inquiryFields">
++      <list>
++       <bean parent="InquirySubSectionHeaderDefinition"
++        p:attributeName="On Campus" />
++       <bean parent="FieldDefinition" p:attributeName="campusCode" />
++       <bean parent="FieldDefinition" p:attributeName="buildingCode" />
++       <bean parent="FieldDefinition" p:attributeName="buildingRoomNumber" />
++       <bean parent="FieldDefinition" p:attributeName="buildingSubRoomNumber" />
++       <bean parent="InquirySubSectionHeaderDefinition"
++        p:attributeName="Off Campus" />
++       <bean parent="FieldDefinition" p:attributeName="offCampusLocation.assetLocationContactName" />
++       <bean parent="FieldDefinition" p:attributeName="offCampusLocation.assetLocationStreetAddress" />
++       <bean parent="FieldDefinition" p:attributeName="offCampusLocation.assetLocationCityName" />
++       <bean parent="FieldDefinition"
++        p:attributeName="offCampusLocation.assetLocationState.postalStateCode" />
++       <bean parent="FieldDefinition" p:attributeName="offCampusLocation.postalZipCode.postalCode" />
++       <bean parent="FieldDefinition"
++        p:attributeName="offCampusLocation.assetLocationCountry.postalCountryName" />
++      </list>
++     </property>
++    </bean>
++    <bean parent="InquirySectionDefinition">
++     <property name="title" value="Organization Information" />
++     <property name="defaultOpen" value="false" />
++     <property name="numberOfColumns" value="1" />
++     <property name="inquiryFields">
++      <list>
++       <bean parent="FieldDefinition" p:attributeName="organizationInventoryName" />
++       <bean parent="FieldDefinition" p:attributeName="representativeUniversalIdentifier" />
++       <bean parent="FieldDefinition" p:attributeName="assetRepresentative.principalName" />
++       <bean parent="FieldDefinition" p:attributeName="assetOrganization.organizationText" />
++       <bean parent="FieldDefinition" p:attributeName="assetOrganization.organizationTagNumber" />
++       <bean parent="FieldDefinition"
++        p:attributeName="assetOrganization.organizationAssetTypeIdentifier" />
++       <bean parent="FieldDefinition" p:attributeName="receiveDate" />
++       <bean parent="FieldDefinition" p:attributeName="replacementAmount" />
++       <!-- KITT-1131 KevinMcO Begin   -->
++       <bean parent="FieldDefinition" p:attributeName="extension.inventoryUnitCode" />
++       <bean parent="FieldDefinition" p:attributeName="extension.inventoryUnitChartOfAccountsCode" />
++       <bean parent="FieldDefinition" p:attributeName="extension.inventoryUnitOrganizationCode" />
++       <bean parent="FieldDefinition" p:attributeName="extension.organizationOwnerAccountChartOfAccountsCode" />
++       <bean parent="FieldDefinition" p:attributeName="extension.organizationOwnerAccountOrganizationCode" />
++       
++       <!-- KITT-1131 KevinMcO End   -->
++      </list>
++     </property>
++    </bean>
++
++    <bean parent="InquirySectionDefinition">
++     <property name="id" value="paymentInformation" />
++     <property name="title" value="Payments" />
++     <property name="defaultOpen" value="false" />
++     <property name="numberOfColumns" value="1" />
++     <property name="inquiryFields">
++      <list>
++       <bean parent="InquiryCollectionDefinition">
++        <property name="attributeName" value="assetPayments" />
++        <property name="businessObjectClass"
++         value="org.kuali.kfs.module.cam.businessobject.AssetPayment" />
++        <property name="numberOfColumns" value="2" />
++        <property name="summaryTitle" value="Payment" />
++        <property name="inquiryFields">
++         <list>
++          <bean parent="FieldDefinition" p:attributeName="capitalAssetNumber" />
++          <bean parent="FieldDefinition" p:attributeName="paymentSequenceNumber" />
++          <bean parent="FieldDefinition" p:attributeName="chartOfAccountsCode" />
++          <bean parent="FieldDefinition" p:attributeName="accountNumber" />
++          <bean parent="FieldDefinition" p:attributeName="subAccountNumber" />
++          <bean parent="FieldDefinition" p:attributeName="financialObjectCode" />
++          <bean parent="FieldDefinition" p:attributeName="financialSubObjectCode" />
++          <bean parent="FieldDefinition" p:attributeName="projectCode" />
++          <bean parent="FieldDefinition" p:attributeName="organizationReferenceId" />
++          <bean parent="FieldDefinition" p:attributeName="documentNumber" />
++          <bean parent="FieldDefinition" p:attributeName="financialDocumentTypeCode" />
++          <bean parent="FieldDefinition" p:attributeName="purchaseOrderNumber" />
++          <bean parent="FieldDefinition" p:attributeName="requisitionNumber" />
++          <bean parent="FieldDefinition" p:attributeName="financialDocumentPostingDate" />
++          <bean parent="FieldDefinition" p:attributeName="financialDocumentPostingYear" />
++          <bean parent="FieldDefinition" p:attributeName="financialDocumentPostingPeriodCode" />
++          <bean parent="FieldDefinition" p:attributeName="transferPaymentCode" />
++          <bean parent="FieldDefinition" p:attributeName="accountChargeAmount" />
++          <bean parent="FieldDefinition" p:attributeName="accumulatedPrimaryDepreciationAmount" />
++          <bean parent="FieldDefinition" p:attributeName="yearToDate" />
++          <bean parent="FieldDefinition" p:attributeName="previousYearPrimaryDepreciationAmount" />
++          <bean parent="FieldDefinition" p:attributeName="period1Depreciation1Amount" />
++          <bean parent="FieldDefinition" p:attributeName="period2Depreciation1Amount" />
++          <bean parent="FieldDefinition" p:attributeName="period3Depreciation1Amount" />
++          <bean parent="FieldDefinition" p:attributeName="period4Depreciation1Amount" />
++          <bean parent="FieldDefinition" p:attributeName="period5Depreciation1Amount" />
++          <bean parent="FieldDefinition" p:attributeName="period6Depreciation1Amount" />
++          <bean parent="FieldDefinition" p:attributeName="period7Depreciation1Amount" />
++          <bean parent="FieldDefinition" p:attributeName="period8Depreciation1Amount" />
++          <bean parent="FieldDefinition" p:attributeName="period9Depreciation1Amount" />
++          <bean parent="FieldDefinition" p:attributeName="period10Depreciation1Amount" />
++          <bean parent="FieldDefinition" p:attributeName="period11Depreciation1Amount" />
++          <bean parent="FieldDefinition" p:attributeName="period12Depreciation1Amount" />
++         </list>
++        </property>
++        <property name="summaryFields">
++         <list>
++          <bean parent="FieldDefinition" p:attributeName="capitalAssetNumber" />
++          <bean parent="FieldDefinition" p:attributeName="paymentSequenceNumber" />
++          <bean parent="FieldDefinition" p:attributeName="financialDocumentPostingDate" />
++          <bean parent="FieldDefinition" p:attributeName="accountChargeAmount" />
++         </list>
++        </property>
++       </bean>
++       <!--
++        TODO KFSMI-645: adding the following field makes above
++        collection disappear
++       -->
++       <!--
++        bean parent="FieldDefinition" p:attributeName="paymentTotalCost"
++        /
++       -->
++      </list>
++     </property>
++    </bean>
++    <bean parent="InquirySectionDefinition">
++     <property name="title" value="Payments Summary" />
++     <property name="defaultOpen" value="false" />
++     <property name="numberOfColumns" value="1" />
++     <property name="inquiryFields">
++      <list>
++       <bean parent="FieldDefinition" p:attributeName="paymentTotalCost" />
++      </list>
++     </property>
++    </bean>
++    <bean parent="InquirySectionDefinition">
++     <property name="title" value="Payments Lookup" />
++     <property name="defaultOpen" value="false" />
++     <property name="numberOfColumns" value="1" />
++     <property name="inquiryFields">
++      <list>
++       <bean parent="FieldDefinition" p:attributeName="lookup" />
++      </list>
++     </property>
++    </bean>
++
++    <bean parent="InquirySectionDefinition">
++     <property name="title" value="Fabrication Information" />
++     <property name="defaultOpen" value="false" />
++     <property name="numberOfColumns" value="1" />
++     <property name="inquiryFields">
++      <list>
++       <bean parent="FieldDefinition" p:attributeName="estimatedFabricationCompletionDate" />
++       <bean parent="FieldDefinition" p:attributeName="fabricationEstimatedTotalAmount" />
++       <bean parent="FieldDefinition" p:attributeName="fabricationEstimatedRetentionYears" />
++      </list>
++     </property>
++    </bean>
++    <bean parent="InquirySectionDefinition">
++     <property name="title" value="Land Information" />
++     <property name="defaultOpen" value="false" />
++     <property name="numberOfColumns" value="1" />
++     <property name="inquiryFields">
++      <list>
++       <bean parent="FieldDefinition" p:attributeName="landCountyName" />
++       <bean parent="FieldDefinition" p:attributeName="landAcreageSize" />
++       <bean parent="FieldDefinition" p:attributeName="landParcelNumber" />
++      </list>
++     </property>
++    </bean>
++    <bean parent="InquirySectionDefinition">
++     <property name="title" value="Asset Depreciation Information" />
++     <property name="defaultOpen" value="false" />
++     <property name="numberOfColumns" value="1" />
++     <property name="inquiryFields">
++      <list>
++       <bean parent="FieldDefinition"
++        p:attributeName="assetPrimaryDepreciationMethod.depreciationMethodCode" />
++       <bean parent="FieldDefinition" p:attributeName="capitalAssetType.depreciableLifeLimit" />
++       <bean parent="FieldDefinition" p:attributeName="baseAmount" />
++       <bean parent="FieldDefinition" p:attributeName="salvageAmount" />
++       <bean parent="FieldDefinition" p:attributeName="accumulatedDepreciation" />
++       <bean parent="FieldDefinition" p:attributeName="bookValue" />
++       <bean parent="FieldDefinition" p:attributeName="yearToDateDepreciation" />
++       <bean parent="FieldDefinition" p:attributeName="currentMonthDepreciation" />
++       <bean parent="FieldDefinition" p:attributeName="prevYearDepreciation" />
++      </list>
++     </property>
++    </bean>
++    <bean parent="InquirySectionDefinition">
++     <property name="title" value="View Asset Merge History" />
++     <property name="defaultOpen" value="false" />
++     <property name="numberOfColumns" value="1" />
++     <property name="inquiryFields">
++      <list>
++       <bean parent="InquiryCollectionDefinition">
++        <property name="attributeName" value="mergeHistory" />
++        <property name="businessObjectClass"
++         value="org.kuali.kfs.module.cam.businessobject.AssetRetirementGlobalDetail" />
++        <property name="numberOfColumns" value="1" />
++        <property name="summaryTitle" value="Source Asset" />
++        <property name="inquiryFields">
++         <list>
++          <bean parent="FieldDefinition" p:attributeName="capitalAssetNumber" />
++          <bean parent="FieldDefinition" p:attributeName="assetRetirementGlobal.retirementDate" />
++         </list>
++        </property>
++        <property name="summaryFields">
++         <list>
++          <bean parent="FieldDefinition" p:attributeName="capitalAssetNumber" />
++         </list>
++        </property>
++       </bean>
++      </list>
++     </property>
++    </bean>
++    <bean parent="InquirySectionDefinition">
++     <property name="title" value="View Asset Separate History" />
++     <property name="defaultOpen" value="false" />
++     <property name="numberOfColumns" value="1" />
++     <property name="inquiryFields">
++      <list>
++       <bean parent="FieldDefinition"
++        p:attributeName="separateHistory.separateSourceCapitalAssetNumber" />
++       <bean parent="FieldDefinition"
++        p:attributeName="separateHistory.separateDocumentHeaderFinalDate" />
++      </list>
++     </property>
++    </bean>
++    <bean parent="InquirySectionDefinition">
++     <property name="title" value="View Retirement Information" />
++     <property name="defaultOpen" value="false" />
++     <property name="numberOfColumns" value="1" />
++     <property name="inquiryFields">
++      <list>
++       <bean parent="FieldDefinition" p:attributeName="retirementInfo.documentNumber" />
++       <bean parent="FieldDefinition" p:attributeName="retirementReasonCode" />
++       <bean parent="FieldDefinition"
++        p:attributeName="retirementInfo.assetRetirementGlobal.retirementDate" />
++       <bean parent="InquirySubSectionHeaderDefinition"
++        p:attributeName="Sale" />
++       <bean parent="FieldDefinition"
++        p:attributeName="retirementInfo.assetRetirementGlobal.buyerDescription" />
++       <bean parent="FieldDefinition" p:attributeName="salePrice" />
++       <bean parent="FieldDefinition" p:attributeName="estimatedSellingPrice" />
++       <bean parent="FieldDefinition" p:attributeName="cashReceiptFinancialDocumentNumber" />
++       <bean parent="FieldDefinition" p:attributeName="retirementChartOfAccountsCode" />
++       <bean parent="FieldDefinition" p:attributeName="retirementAccountNumber" />
++       <bean parent="InquirySubSectionHeaderDefinition"
++        p:attributeName="Stolen" />
++       <bean parent="FieldDefinition" p:attributeName="campusPoliceDepartmentCaseNumber" />
++       <bean parent="InquirySubSectionHeaderDefinition"
++        p:attributeName="External Transfer/Gift" />
++       <bean parent="FieldDefinition"
++        p:attributeName="retirementInfo.assetRetirementGlobal.retirementContactName" />
++       <bean parent="FieldDefinition"
++        p:attributeName="retirementInfo.assetRetirementGlobal.retirementInstitutionName" />
++       <bean parent="FieldDefinition"
++        p:attributeName="retirementInfo.assetRetirementGlobal.retirementStreetAddress" />
++       <bean parent="FieldDefinition"
++        p:attributeName="retirementInfo.assetRetirementGlobal.retirementCityName" />
++       <bean parent="FieldDefinition"
++        p:attributeName="retirementInfo.assetRetirementGlobal.retirementState.postalStateCode" />
++       <bean parent="FieldDefinition"
++        p:attributeName="retirementInfo.assetRetirementGlobal.postalZipCode.postalCode" />
++       <bean parent="FieldDefinition"
++        p:attributeName="retirementInfo.assetRetirementGlobal.retirementCountry.postalCountryCode" />
++       <bean parent="FieldDefinition"
++        p:attributeName="retirementInfo.assetRetirementGlobal.retirementPhoneNumber" />
++      </list>
++     </property>
++    </bean>
++    <bean parent="InquirySectionDefinition">
++     <property name="title" value="View Equipment Loan Information" />
++     <property name="defaultOpen" value="false" />
++     <property name="numberOfColumns" value="1" />
++     <property name="inquiryFields">
++      <list>
++       <bean parent="FieldDefinition" p:attributeName="loanDate" />
++       <bean parent="FieldDefinition" p:attributeName="expectedReturnDate" />
++       <bean parent="FieldDefinition" p:attributeName="loanReturnDate" />
++       <bean parent="InquirySubSectionHeaderDefinition"
++        p:attributeName="Borrower Address" />
++       <bean parent="FieldDefinition" p:attributeName="borrowerLocation.assetLocationContactName" />
++       <bean parent="FieldDefinition" p:attributeName="borrowerLocation.assetLocationStreetAddress" />
++       <bean parent="FieldDefinition" p:attributeName="borrowerLocation.assetLocationCityName" />
++       <bean parent="FieldDefinition"
++        p:attributeName="borrowerLocation.assetLocationState.postalStateCode" />
++       <bean parent="FieldDefinition" p:attributeName="borrowerLocation.postalZipCode.postalCode" />
++       <bean parent="FieldDefinition"
++        p:attributeName="borrowerLocation.assetLocationCountry.postalCountryName" />
++       <bean parent="FieldDefinition" p:attributeName="borrowerLocation.assetLocationPhoneNumber" />
++       <bean parent="InquirySubSectionHeaderDefinition"
++        p:attributeName="Stored at Address" />
++       <bean parent="FieldDefinition"
++        p:attributeName="borrowerStorageLocation.assetLocationStreetAddress" />
++       <bean parent="FieldDefinition" p:attributeName="borrowerStorageLocation.assetLocationCityName" />
++       <bean parent="FieldDefinition"
++        p:attributeName="borrowerStorageLocation.assetLocationState.postalStateCode" />
++       <bean parent="FieldDefinition"
++        p:attributeName="borrowerStorageLocation.postalZipCode.postalCode" />
++       <bean parent="FieldDefinition"
++        p:attributeName="borrowerStorageLocation.assetLocationCountry.postalCountryName" />
++       <bean parent="FieldDefinition"
++        p:attributeName="borrowerStorageLocation.assetLocationPhoneNumber" />
++      </list>
++     </property>
++    </bean>
++    <bean parent="InquirySectionDefinition">
++     <property name="title" value="Warranty" />
++     <property name="defaultOpen" value="false" />
++     <property name="numberOfColumns" value="1" />
++     <property name="inquiryFields">
++      <list>
++       <bean parent="FieldDefinition" p:attributeName="assetWarranty.warrantyNumber" />
++       <bean parent="FieldDefinition" p:attributeName="assetWarranty.warrantyContactName" />
++       <bean parent="FieldDefinition" p:attributeName="assetWarranty.warrantyPhoneNumber" />
++       <bean parent="FieldDefinition" p:attributeName="assetWarranty.warrantyPurchaseOrderNumber" />
++       <bean parent="FieldDefinition" p:attributeName="assetWarranty.warrantyBeginningDate" />
++       <bean parent="FieldDefinition" p:attributeName="assetWarranty.warrantyEndingDate" />
++       <bean parent="FieldDefinition" p:attributeName="assetWarranty.warrantyText" />
++      </list>
++     </property>
++    </bean>
++    <bean parent="InquirySectionDefinition">
++     <property name="title" value="Repair History" />
++     <property name="defaultOpen" value="false" />
++     <property name="numberOfColumns" value="1" />
++     <property name="inquiryFields">
++      <list>
++       <bean parent="InquiryCollectionDefinition">
++        <property name="attributeName" value="assetRepairHistory" />
++        <property name="businessObjectClass"
++         value="org.kuali.kfs.module.cam.businessobject.AssetRepairHistory" />
++        <property name="numberOfColumns" value="2" />
++        <property name="inquiryFields">
++         <list>
++          <bean parent="FieldDefinition" p:attributeName="incidentDate" />
++          <bean parent="FieldDefinition" p:attributeName="problemDescription" />
++          <bean parent="FieldDefinition" p:attributeName="repairContactName" />
++          <bean parent="FieldDefinition" p:attributeName="estimatedRepairDate" />
++          <bean parent="FieldDefinition" p:attributeName="repairDate" />
++          <bean parent="FieldDefinition" p:attributeName="repairAmount" />
++          <bean parent="FieldDefinition" p:attributeName="repairSolutionDescription" />
++          <bean parent="FieldDefinition" p:attributeName="repairNoteText" />
++         </list>
++        </property>
++       </bean>
++      </list>
++     </property>
++    </bean>
++    <bean parent="InquirySectionDefinition">
++     <property name="title" value="Components" />
++     <property name="defaultOpen" value="false" />
++     <property name="numberOfColumns" value="1" />
++     <property name="inquiryFields">
++      <list>
++       <bean parent="InquiryCollectionDefinition">
++        <property name="attributeName" value="assetComponents" />
++        <property name="businessObjectClass"
++         value="org.kuali.kfs.module.cam.businessobject.AssetComponent" />
++        <property name="numberOfColumns" value="2" />
++        <property name="inquiryFields">
++         <list>
++          <bean parent="FieldDefinition" p:attributeName="componentNumber" />
++          <bean parent="FieldDefinition" p:attributeName="componentDescription" />
++          <bean parent="FieldDefinition" p:attributeName="componentConditionCode" />
++          <bean parent="FieldDefinition" p:attributeName="componentVendorName" />
++          <bean parent="FieldDefinition" p:attributeName="componentManufacturerName" />
++          <bean parent="FieldDefinition" p:attributeName="componentManufacturerModelNumber" />
++          <bean parent="FieldDefinition" p:attributeName="componentSerialNumber" />
++          <bean parent="FieldDefinition" p:attributeName="componentOrganizationTagNumber" />
++          <bean parent="FieldDefinition" p:attributeName="componentContactPhoneNumber" />
++          <bean parent="FieldDefinition" p:attributeName="componentOrganizationText" />
++          <bean parent="FieldDefinition" p:attributeName="componentEstimatedLifetimeLimit" />
++          <bean parent="FieldDefinition" p:attributeName="componentReplacementAmount" />
++          <bean parent="FieldDefinition" p:attributeName="governmentTagNumber" />
++          <bean parent="FieldDefinition" p:attributeName="nationalStockNumber" />
++          <bean parent="FieldDefinition" p:attributeName="componentWarrantyNumber" />
++          <bean parent="FieldDefinition" p:attributeName="componentWarrantyContactName" />
++          <bean parent="FieldDefinition" p:attributeName="componentWarrantyPhoneNumber" />
++          <bean parent="FieldDefinition" p:attributeName="componentWarrantyPurchaseOrderNumber" />
++          <bean parent="FieldDefinition" p:attributeName="componentWarrantyBeginningDate" />
++          <bean parent="FieldDefinition" p:attributeName="componentWarrantyEndingDate" />
++          <bean parent="FieldDefinition" p:attributeName="componentWarrantyText" />
++         </list>
++        </property>
++       </bean>
++      </list>
++     </property>
++    </bean>
++
++    <bean parent="InquirySectionDefinition">
++     <property name="title" value="Lookup Related Capital Asset Document(s)" />
++     <property name="defaultOpen" value="false" />
++     <property name="numberOfColumns" value="1" />
++     <property name="inquiryFields">
++      <list>
++       <bean parent="FieldDefinition" p:attributeName="assetMaintenanceDocumentLookup" />
++       <bean parent="FieldDefinition" p:attributeName="assetFabricationDocumentLookup" />
++       <bean parent="FieldDefinition" p:attributeName="assetCreateOrSeparateDocumentLookup" />
++       <bean parent="FieldDefinition" p:attributeName="assetPaymentDocumentLookup" />
++       <bean parent="FieldDefinition" p:attributeName="assetTransferDocumentLookup" />
++       <bean parent="FieldDefinition" p:attributeName="assetEquipmentLoanOrReturnDocumentLookup" />
++       <bean parent="FieldDefinition" p:attributeName="assetLocationDocumentLookup" />
++       <bean parent="FieldDefinition" p:attributeName="assetMergeOrRetirementDocumentLookup" />
++       <bean parent="FieldDefinition" p:attributeName="camsComplexMaintenanceDocumentLookup" />
++      </list>
++     </property>
++    </bean>
++    
++     <bean parent="InquirySectionDefinition">
++     <property name="title" value="Asset Award History" />
++     <property name="defaultOpen" value="false" />
++     <property name="numberOfColumns" value="1" />
++     <property name="inquiryFields">
++      <list>
++       <bean parent="InquiryCollectionDefinition">
++        <property name="attributeName" value="extension.assetAwardHistory" />
++        <property name="businessObjectClass"
++         value="edu.arizona.kfs.module.cam.businessobject.AssetAwardHistory" />
++        <property name="numberOfColumns" value="2" />
++        <property name="inquiryFields">
++         <list>
++          <bean parent="FieldDefinition" p:attributeName="chartOfAccountsCode" />
++          <bean parent="FieldDefinition" p:attributeName="accountNumber" />
++          <bean parent="FieldDefinition" p:attributeName="effectiveDate" />
++          <bean parent="FieldDefinition" p:attributeName="agencyNumber" />
++          <bean parent="FieldDefinition" p:attributeName="grantNumber" />
++         </list>
++        </property>
++       </bean>
++      </list>
++     </property>
++    </bean>
++
++   </list>
++  </property>
++  <property name="inquirableClass"
++   value="org.kuali.kfs.module.cam.businessobject.inquiry.AssetInquirableImpl" />
++ </bean>
++
+ </beans>
+Index: financial-system/kfs/trunk/work/src/edu/arizona/kfs/module/cam/businessobject/AssetGlobalDetailExtension.java
+===================================================================
+--- financial-system/kfs/trunk/work/src/edu/arizona/kfs/module/cam/businessobject/AssetGlobalDetailExtension.java	(revision 0)
++++ financial-system/kfs/trunk/work/src/edu/arizona/kfs/module/cam/businessobject/AssetGlobalDetailExtension.java	(revision 11921)
+@@ -0,0 +1,185 @@
++/*
++ * Copyright 2010 The Kuali Foundation.
++ * 
++ * Licensed under the Educational Community License, Version 1.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy of the License at
++ * 
++ * http://www.opensource.org/licenses/ecl1.php
++ * 
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++package edu.arizona.kfs.module.cam.businessobject;
++
++import java.util.LinkedHashMap;
++
++import org.apache.log4j.Logger;
++import org.kuali.kfs.module.cam.businessobject.AssetGlobalDetail;
++import org.kuali.rice.kns.bo.PersistableBusinessObjectExtensionBase;
++
++public class AssetGlobalDetailExtension extends PersistableBusinessObjectExtensionBase {
++
++    private static Logger LOG = Logger.getLogger(AssetGlobalDetailExtension.class);
++
++    private Long capitalAssetNumber;
++    private String documentNumber;
++    private String inventoryUnitCode;
++    private String inventoryUnitOrganizationCode;
++    private String inventoryUnitChartOfAccountsCode;
++
++    private AssetInventoryUnit assetInvUnitObj;
++    private AssetGlobalDetail assetGlobalDetailObj;
++
++
++    /**
++     * Gets the assetInvUnitObj attribute. 
++     * @return Returns the assetInvUnitObj.
++     */
++    public AssetInventoryUnit getAssetInvUnitObj() {
++        return assetInvUnitObj;
++    }
++
++
++    /**
++     * Sets the assetInvUnitObj attribute value.
++     * @param assetInvUnitObj The assetInvUnitObj to set.
++     */
++    public void setAssetInvUnitObj(AssetInventoryUnit assetInvUnitObj) {
++        this.assetInvUnitObj = assetInvUnitObj;
++    }
++
++
++    /**
++     * Gets the assetGlobalDetailObj attribute. 
++     * @return Returns the assetGlobalDetailObj.
++     */
++    public AssetGlobalDetail getAssetGlobalDetailObj() {
++        return assetGlobalDetailObj;
++    }
++
++
++    /**
++     * Sets the assetGlobalDetailObj attribute value.
++     * @param assetGlobalDetailObj The assetGlobalDetailObj to set.
++     */
++    public void setAssetGlobalDetailObj(AssetGlobalDetail assetGlobalDetailObj) {
++        this.assetGlobalDetailObj = assetGlobalDetailObj;
++    }
++
++
++    /**
++     * Gets the capitalAssetNumber attribute.
++     * 
++     * @return Returns the capitalAssetNumber.
++     */
++    public Long getCapitalAssetNumber() {
++        return capitalAssetNumber;
++    }
++
++
++    /**
++     * Sets the capitalAssetNumber attribute value.
++     * 
++     * @param capitalAssetNumber The capitalAssetNumber to set.
++     */
++    public void setCapitalAssetNumber(Long capitalAssetNumber) {
++        this.capitalAssetNumber = capitalAssetNumber;
++    }
++
++
++    /**
++     * Gets the documentNumber attribute.
++     * 
++     * @return Returns the documentNumber.
++     */
++    public String getDocumentNumber() {
++        return documentNumber;
++    }
++
++
++    /**
++     * Sets the documentNumber attribute value.
++     * 
++     * @param documentNumber The documentNumber to set.
++     */
++    public void setDocumentNumber(String documentNumber) {
++        this.documentNumber = documentNumber;
++    }
++
++
++    /**
++     * Gets the inventoryUnitCode attribute.
++     * 
++     * @return Returns the inventoryUnitCode.
++     */
++    public String getInventoryUnitCode() {
++        return inventoryUnitCode;
++    }
++
++
++    /**
++     * Sets the inventoryUnitCode attribute value.
++     * 
++     * @param inventoryUnitCode The inventoryUnitCode to set.
++     */
++    public void setInventoryUnitCode(String inventoryUnitCode) {
++        this.inventoryUnitCode = inventoryUnitCode;
++    }
++
++
++    /**
++     * Gets the inventoryUnitOrganizationCode attribute.
++     * 
++     * @return Returns the inventoryUnitOrganizationCode.
++     */
++    public String getInventoryUnitOrganizationCode() {
++        return inventoryUnitOrganizationCode;
++    }
++
++
++    /**
++     * Sets the inventoryUnitOrganizationCode attribute value.
++     * 
++     * @param inventoryUnitOrganizationCode The inventoryUnitOrganizationCode to set.
++     */
++    public void setInventoryUnitOrganizationCode(String inventoryUnitOrganizationCode) {
++        this.inventoryUnitOrganizationCode = inventoryUnitOrganizationCode;
++    }
++
++
++    /**
++     * Gets the inventoryUnitChartOfAccountsCode attribute.
++     * 
++     * @return Returns the inventoryUnitChartOfAccountsCode.
++     */
++    public String getInventoryUnitChartOfAccountsCode() {
++        return inventoryUnitChartOfAccountsCode;
++    }
++
++
++    /**
++     * Sets the inventoryUnitChartOfAccountsCode attribute value.
++     * 
++     * @param inventoryUnitChartOfAccountsCode The inventoryUnitChartOfAccountsCode to set.
++     */
++    public void setInventoryUnitChartOfAccountsCode(String inventoryUnitChartOfAccountsCode) {
++        this.inventoryUnitChartOfAccountsCode = inventoryUnitChartOfAccountsCode;
++    }
++
++
++    @SuppressWarnings("unchecked")
++    protected LinkedHashMap toStringMapper() {
++        LinkedHashMap m = new LinkedHashMap();
++        if (this.capitalAssetNumber != null && documentNumber != null) {
++            m.put("capitalAssetNumber", this.capitalAssetNumber.toString());
++            m.put("documentNumber", this.documentNumber.toString());
++        }
++
++        return m;
++    }
++
++}
+Index: financial-system/kfs/trunk/work/src/edu/arizona/kfs/module/cam/businessobject/AssetExtension.java
+===================================================================
+--- financial-system/kfs/trunk/work/src/edu/arizona/kfs/module/cam/businessobject/AssetExtension.java	(revision 11920)
++++ financial-system/kfs/trunk/work/src/edu/arizona/kfs/module/cam/businessobject/AssetExtension.java	(revision 11921)
+@@ -1,4 +1,5 @@
+ package edu.arizona.kfs.module.cam.businessobject;
++
+ /*
+  * Copyright 2009 The Kuali Foundation.
+  * 
+@@ -18,6 +19,7 @@
+ import java.util.LinkedHashMap;
+ import java.util.List;
+ 
++import org.apache.commons.lang.StringUtils;
+ import org.apache.log4j.Logger;
+ import org.kuali.kfs.module.cam.businessobject.Asset;
+ import org.kuali.kfs.module.cam.businessobject.AssetComponent;
+@@ -27,50 +29,184 @@
+ import org.kuali.kfs.module.cam.businessobject.AssetRetirementGlobal;
+ import org.kuali.kfs.module.cam.businessobject.AssetRetirementGlobalDetail;
+ import org.kuali.rice.kns.bo.PersistableBusinessObjectExtensionBase;
++import org.kuali.rice.kns.util.ObjectUtils;
+ import org.kuali.rice.kns.util.TypedArrayList;
+ 
+ /**
+  * This class represents the extended attributes for Asset.
++ * 
+  * @author $KevinMco$
+- * 
+  */
+ 
+-public class AssetExtension extends PersistableBusinessObjectExtensionBase  {
+-    
++public class AssetExtension extends PersistableBusinessObjectExtensionBase {
++
+     private static Logger LOG = Logger.getLogger(AssetExtension.class);
+-                
+-    private Long                    capitalAssetNumber;   
++
++    private Long capitalAssetNumber;
++    private String inventoryUnitCode;
++    private String inventoryUnitOrganizationCode;
++    private String inventoryUnitChartOfAccountsCode;
++
++    private Asset assetObj;
+     private List<AssetAwardHistory> assetAwardHistory;
+-    
+-    
+-    private Asset assetObj;
+-    
++    private AssetInventoryUnit assetInvUnitObj;
++
+     @SuppressWarnings("unchecked")
+     protected LinkedHashMap toStringMapper() {
+-        LinkedHashMap m = new LinkedHashMap();      
++        LinkedHashMap m = new LinkedHashMap();
+         if (this.capitalAssetNumber != null) {
+             m.put("capitalAssetNumber", this.capitalAssetNumber.toString());
+         }
+-        
++
+         return m;
+     }
+-    
++
++
+     /**
+-     * Default constructor.
++     * This method...
++     * 
++     * @return
+      */
+-    public AssetExtension() {
+-        this.assetAwardHistory = new TypedArrayList(AssetAwardHistory.class);
++    public String getOrganizationOwnerAccountOrganizationCode() {
++        if (ObjectUtils.isNotNull(assetObj)) {
++            return assetObj.getOrganizationOwnerAccount().getOrganizationCode();
++        }
++        return null;
+     }
+ 
++    /**
++     * This method...
++     * 
++     * @return
++     */
++    public String getOrganizationOwnerAccountChartOfAccountsCode() {
++        // getAssetObj();
++        if (ObjectUtils.isNotNull(assetObj)) {
++            return assetObj.getOrganizationOwnerAccount().getChartOfAccountsCode();
++        }
++        return null;
++    }
+ 
++    /**
++     * Gets the assetInvUnitObj attribute.
++     * 
++     * @return Returns the assetInvUnitObj.
++     */
++    public AssetInventoryUnit getAssetInvUnitObj() {
++        return assetInvUnitObj;
++    }
+ 
++    /**
++     * Sets the assetInvUnitObj attribute value.
++     * 
++     * @param assetInvUnitObj The assetInvUnitObj to set.
++     */
++    public void setAssetInvUnitObj(AssetInventoryUnit assetInvUnitObj) {
++        this.assetInvUnitObj = assetInvUnitObj;
++    }
+ 
+ 
++    /**
++     * Gets the assetObj attribute.
++     * 
++     * @return Returns the assetObj.
++     */
++    public Asset getAssetObj() {
++        return assetObj;
++    }
+ 
+ 
++    /**
++     * Sets the assetObj attribute value.
++     * 
++     * @param assetObj The assetObj to set.
++     */
++    public void setAssetObj(Asset assetObj) {
++        this.assetObj = assetObj;
++    }
+ 
++
+     /**
+-     * Gets the capitalAssetNumber attribute. 
++     * Gets the inventoryUnitOrganizationCode attribute.
++     * 
++     * @return Returns the inventoryUnitOrganizationCode.
++     */
++    public String getInventoryUnitOrganizationCode() {
++        //if (StringUtils.isBlank(inventoryUnitOrganizationCode)) {
++            return getOrganizationOwnerAccountOrganizationCode();
++        //}
++        //else {
++        //    return inventoryUnitOrganizationCode;
++        //}
++    }
++
++
++    /**
++     * Sets the inventoryUnitOrganizationCode attribute value.
++     * 
++     * @param inventoryUnitOrganizationCode The inventoryUnitOrganizationCode to set.
++     */
++    public void setInventoryUnitOrganizationCode(String inventoryUnitOrganizationCode) {
++        this.inventoryUnitOrganizationCode = inventoryUnitOrganizationCode;
++    }
++
++
++    /**
++     * Gets the inventoryUnitChartOfAccountsCode attribute.
++     * 
++     * @return Returns the inventoryUnitChartOfAccountsCode.
++     */
++    public String getInventoryUnitChartOfAccountsCode() {
++        //if (StringUtils.isBlank(inventoryUnitChartOfAccountsCode)) {
++            return getOrganizationOwnerAccountChartOfAccountsCode();
++        //}
++        //else {
++        //return inventoryUnitChartOfAccountsCode;
++        //}
++    }
++
++
++    /**
++     * Sets the inventoryUnitChartOfAccountsCode attribute value.
++     * 
++     * @param inventoryUnitChartOfAccountsCode The inventoryUnitChartOfAccountsCode to set.
++     */
++    public void setInventoryUnitChartOfAccountsCode(String inventoryUnitChartOfAccountsCode) {
++        this.inventoryUnitChartOfAccountsCode = inventoryUnitChartOfAccountsCode;
++    }
++
++
++    /**
++     * Gets the inventoryUnitCode attribute.
++     * 
++     * @return Returns the inventoryUnitCode.
++     */
++    public String getInventoryUnitCode() {
++        return inventoryUnitCode;
++    }
++
++
++    /**
++     * Sets the inventoryUnitCode attribute value.
++     * 
++     * @param inventoryUnitCode The inventoryUnitCode to set.
++     */
++    public void setInventoryUnitCode(String inventoryUnitCode) {
++        this.inventoryUnitCode = inventoryUnitCode;
++    }
++
++
++    /**
++     * Default constructor.
++     */
++    public AssetExtension() {
++        this.assetAwardHistory = new TypedArrayList(AssetAwardHistory.class);
++    }
++
++
++    /**
++     * Gets the capitalAssetNumber attribute.
++     * 
+      * @return Returns the capitalAssetNumber.
+      */
+     public Long getCapitalAssetNumber() {
+@@ -80,6 +216,7 @@
+ 
+     /**
+      * Sets the capitalAssetNumber attribute value.
++     * 
+      * @param capitalAssetNumber The capitalAssetNumber to set.
+      */
+     public void setCapitalAssetNumber(Long capitalAssetNumber) {
+@@ -88,7 +225,8 @@
+ 
+ 
+     /**
+-     * Gets the assetAwardHistory attribute. 
++     * Gets the assetAwardHistory attribute.
++     * 
+      * @return Returns the assetAwardHistory.
+      */
+     public List<AssetAwardHistory> getAssetAwardHistory() {
+@@ -98,12 +236,12 @@
+ 
+     /**
+      * Sets the assetAwardHistory attribute value.
++     * 
+      * @param assetAwardHistory The assetAwardHistory to set.
+      */
+     public void setAssetAwardHistory(List<AssetAwardHistory> assetAwardHistory) {
+         this.assetAwardHistory = assetAwardHistory;
+     }
+-    
+ 
+ 
+ }
+Index: financial-system/kfs/trunk/work/src/edu/arizona/kfs/module/cam/businessobject/AssetInventoryUnit.java
+===================================================================
+--- financial-system/kfs/trunk/work/src/edu/arizona/kfs/module/cam/businessobject/AssetInventoryUnit.java	(revision 0)
++++ financial-system/kfs/trunk/work/src/edu/arizona/kfs/module/cam/businessobject/AssetInventoryUnit.java	(revision 11921)
+@@ -0,0 +1,204 @@
++/*
++ * Copyright 2010 The Kuali Foundation.
++ * 
++ * Licensed under the Educational Community License, Version 1.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy of the License at
++ * 
++ * http://www.opensource.org/licenses/ecl1.php
++ * 
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++package edu.arizona.kfs.module.cam.businessobject;
++
++import java.util.LinkedHashMap;
++
++import org.kuali.kfs.coa.businessobject.Chart;
++import org.kuali.kfs.coa.businessobject.Organization;
++import org.kuali.rice.kns.bo.Inactivateable;
++import org.kuali.rice.kns.bo.PersistableBusinessObjectBase;
++
++public class AssetInventoryUnit extends PersistableBusinessObjectBase implements Inactivateable {
++
++    public String inventoryUnitCode;
++    public String inventoryUnitName;
++    public String chartOfAccountsCode;
++    public String organizationCode;
++    public String organizationName;
++    private boolean active;
++
++    private Chart coaCodeObj;
++    private Organization orgObj;
++
++
++
++
++    /**
++     * Gets the coaCodeObj attribute. 
++     * @return Returns the coaCodeObj.
++     */
++    public Chart getCoaCodeObj() {
++        return coaCodeObj;
++    }
++
++
++    /**
++     * Sets the coaCodeObj attribute value.
++     * @param coaCodeObj The coaCodeObj to set.
++     */
++    public void setCoaCodeObj(Chart coaCodeObj) {
++        this.coaCodeObj = coaCodeObj;
++    }
++
++
++    /**
++     * Gets the chartOfAccountsCode attribute. 
++     * @return Returns the chartOfAccountsCode.
++     */
++    public String getChartOfAccountsCode() {
++        return chartOfAccountsCode;
++    }
++
++
++    /**
++     * Sets the chartOfAccountsCode attribute value.
++     * @param chartOfAccountsCode The chartOfAccountsCode to set.
++     */
++    public void setChartOfAccountsCode(String chartOfAccountsCode) {
++        this.chartOfAccountsCode = chartOfAccountsCode;
++    }
++
++
++    /**
++     * Gets the organizationCode attribute. 
++     * @return Returns the organizationCode.
++     */
++    public String getOrganizationCode() {
++        return organizationCode;
++    }
++
++
++    /**
++     * Sets the organizationCode attribute value.
++     * @param organizationCode The organizationCode to set.
++     */
++    public void setOrganizationCode(String organizationCode) {
++        this.organizationCode = organizationCode;
++    }
++
++    /**
++     * Gets the orgObj attribute. 
++     * @return Returns the orgObj.
++     */
++    public Organization getOrgObj() {
++        return orgObj;
++    }
++
++
++    /**
++     * Sets the orgObj attribute value.
++     * @param orgObj The orgObj to set.
++     */
++    public void setOrgObj(Organization orgObj) {
++        this.orgObj = orgObj;
++    }
++
++
++   
++
++    /**
++     * Gets the organizationName attribute.
++     * 
++     * @return Returns the organizationName.
++     */
++    public String getOrganizationName() {
++        return organizationName;
++    }
++
++
++    /**
++     * Sets the organizationName attribute value.
++     * 
++     * @param organizationName The organizationName to set.
++     */
++    public void setOrganizationName(String organizationName) {
++        this.organizationName = organizationName;
++    }
++
++
++    /**
++     * Gets the active attribute.
++     * 
++     * @return Returns the active.
++     */
++    public boolean isActive() {
++        return active;
++    }
++
++
++    /**
++     * Sets the active attribute value.
++     * 
++     * @param active The active to set.
++     */
++    public void setActive(boolean active) {
++        this.active = active;
++    }
++
++
++    /**
++     * Gets the inventoryUnitCode attribute.
++     * 
++     * @return Returns the inventoryUnitCode.
++     */
++    public String getInventoryUnitCode() {
++        return inventoryUnitCode;
++    }
++
++
++    /**
++     * Sets the inventoryUnitCode attribute value.
++     * 
++     * @param inventoryUnitCode The inventoryUnitCode to set.
++     */
++    public void setInventoryUnitCode(String inventoryUnitCode) {
++        this.inventoryUnitCode = inventoryUnitCode;
++    }
++
++
++    /**
++     * Gets the inventoryUnitName attribute.
++     * 
++     * @return Returns the inventoryUnitName.
++     */
++    public String getInventoryUnitName() {
++        return inventoryUnitName;
++    }
++
++
++    /**
++     * Sets the inventoryUnitName attribute value.
++     * 
++     * @param inventoryUnitName The inventoryUnitName to set.
++     */
++    public void setInventoryUnitName(String inventoryUnitName) {
++        this.inventoryUnitName = inventoryUnitName;
++    }
++
++
++    protected LinkedHashMap toStringMapper() {
++        LinkedHashMap m = new LinkedHashMap();
++        if (this.inventoryUnitCode != null && this.chartOfAccountsCode != null && this.organizationCode != null) {
++            m.put("inventoryUnitCode", this.inventoryUnitCode.toString());
++            m.put("ChartOfAccountsCode", this.chartOfAccountsCode.toString());
++            m.put("inventoryUnitOrganizationCode", this.organizationCode.toString());
++        }
++
++        return m;
++    }
++
++}
+Index: financial-system/kfs/trunk/work/src/edu/arizona/kfs/module/cam/ojb-cam.xml
+===================================================================
+--- financial-system/kfs/trunk/work/src/edu/arizona/kfs/module/cam/ojb-cam.xml	(revision 11920)
++++ financial-system/kfs/trunk/work/src/edu/arizona/kfs/module/cam/ojb-cam.xml	(revision 11921)
+@@ -1,348 +1,552 @@
+ <descriptor-repository version="1.0">
+ 
+-<class-descriptor
+-		class="edu.arizona.kfs.module.cam.businessobject.AssetExtension"
+-		table="CM_CPTLAST_EXT_T">
+-		<field-descriptor name="capitalAssetNumber" column="CPTLAST_NBR"
+-			jdbc-type="BIGINT" primarykey="true" index="true" />
+-		<field-descriptor name="objectId" column="OBJ_ID"
+-			jdbc-type="VARCHAR" index="true" />
+-		<field-descriptor name="versionNumber" column="VER_NBR"
+-			jdbc-type="BIGINT" locking="true" />
+-		
++ <class-descriptor
++  class="edu.arizona.kfs.module.cam.businessobject.AssetInventoryUnit"
++  table="CM_CPTLAST_INV_UNIT_T">
+ 
+-		<collection-descriptor name="assetAwardHistory"
+-			element-class-ref="edu.arizona.kfs.module.cam.businessobject.AssetAwardHistory"
+-			collection-class="org.apache.ojb.broker.util.collections.ManageableArrayList"
+-			auto-retrieve="true" auto-delete="object" auto-update="object" proxy="true">
+-			<orderby name="effectiveDate" sort="ASC" />
+-			<inverse-foreignkey field-ref="capitalAssetNumber" />
+-		</collection-descriptor>
++  <field-descriptor name="inventoryUnitCode" column="INV_UNIT_CD"
++   jdbc-type="VARCHAR" primarykey="true" index="true" />
+ 
+-	</class-descriptor>
++  <field-descriptor name="chartOfAccountsCode" column="FIN_COA_CD"
++   jdbc-type="VARCHAR" primarykey="true" index="true" />
+ 
+-	<class-descriptor
+-		class="edu.arizona.kfs.module.cam.businessobject.AssetAwardHistory"
+-		table="CM_CPTLAST_AWARD_HIST_T">
+-		<field-descriptor name="awardHistoryNumber" column="CM_CPTLAST_AWARD_HIST_NBR"
+-			jdbc-type="BIGINT" primarykey="true" index="true" autoincrement="true"
+-			sequence-name="CM_CPTLAST_AWARD_HIST_NBR_SEQ" />
+-		<field-descriptor name="objectId" column="OBJ_ID"
+-			jdbc-type="VARCHAR" index="true" />
+-		<field-descriptor name="versionNumber" column="VER_NBR"
+-			jdbc-type="BIGINT" locking="true" />
+-		<field-descriptor name="chartOfAccountsCode" column="FIN_COA_CD"
+-			jdbc-type="VARCHAR" />
+-		<field-descriptor name="capitalAssetNumber" column="CPTLAST_NBR"
+-			jdbc-type="BIGINT" index="true" />
+-		<field-descriptor name="accountNumber"
+-			column="ORG_OWNER_ACCT_NBR" jdbc-type="VARCHAR" />
+-		<field-descriptor name="agencyNumber" column="CG_AGENCY_NBR"
+-			jdbc-type="VARCHAR" />
+-		<field-descriptor name="grantNumber" column="GRANT_NBR"
+-			jdbc-type="VARCHAR" />
+-		<field-descriptor name="effectiveDate" column="EFFECTIVE_DT"
+-			jdbc-type="DATE" />
++  <field-descriptor name="organizationCode" column="ORG_CD"
++   jdbc-type="VARCHAR" primarykey="true" index="true" />
+ 
+-		<reference-descriptor name="accountObj"
+-			class-ref="org.kuali.kfs.coa.businessobject.Account" auto-retrieve="true"
+-			auto-update="none" auto-delete="none" proxy="true">
+-			<foreignkey field-ref="chartOfAccountsCode" />
+-			<foreignkey field-ref="accountNumber" />
+-		    </reference-descriptor>
++  <field-descriptor name="objectId" column="OBJ_ID"
++   jdbc-type="VARCHAR" index="true" />
+ 
+-		<reference-descriptor name="asset"
+-			class-ref="org.kuali.kfs.module.cam.businessobject.Asset"
+-			auto-retrieve="true" auto-update="none" auto-delete="none" proxy="true">
+-			<foreignkey field-ref="capitalAssetNumber" />
+-		</reference-descriptor>
++  <field-descriptor name="versionNumber" column="VER_NBR"
++   jdbc-type="BIGINT" locking="true" />
+ 
+-		<reference-descriptor name="coaCodeObj"
+-			class-ref="org.kuali.kfs.coa.businessobject.Chart" auto-retrieve="true"
+-			auto-update="none" auto-delete="none" proxy="true">
+-			<foreignkey field-ref="chartOfAccountsCode" />
+-		</reference-descriptor>
++  <field-descriptor name="inventoryUnitName" column="INV_UNIT_NM"
++   jdbc-type="VARCHAR" />
+ 
+-		<reference-descriptor name="agencyObj"
+-			class-ref="org.kuali.kfs.module.cg.businessobject.Agency"
+-			auto-retrieve="true" auto-update="none" auto-delete="none" proxy="true">
+-			<foreignkey field-ref="agencyNumber" />
+-		</reference-descriptor>
++  <field-descriptor name="active" column="ACTV_IND"
++   jdbc-type="VARCHAR" conversion="org.kuali.rice.kns.util.OjbCharBooleanConversion" />
+ 
+-	</class-descriptor>
+-	
+ 
++  <reference-descriptor name="coaCodeObj"
++   class-ref="org.kuali.kfs.coa.businessobject.Chart" auto-retrieve="true"
++   auto-update="none" auto-delete="none" proxy="true">
++   <foreignkey field-ref="chartOfAccountsCode" />
++  </reference-descriptor>
+ 
++  <reference-descriptor name="orgObj"
++   class-ref="org.kuali.kfs.coa.businessobject.Organization"
++   auto-retrieve="true" auto-update="none" auto-delete="none" proxy="true">
++   <foreignkey field-ref="chartOfAccountsCode" />
++   <foreignkey field-ref="organizationCode" />
++  </reference-descriptor>
+ 
+-	<class-descriptor class="org.kuali.kfs.module.cam.businessobject.Asset"
+-		table="CM_CPTLAST_T">
+-		<field-descriptor name="capitalAssetNumber" column="CPTLAST_NBR"
+-			jdbc-type="BIGINT" primarykey="true" index="true" autoincrement="true"
+-			sequence-name="CPTLAST_NBR_SEQ" />
+-		<field-descriptor name="objectId" column="OBJ_ID"
+-			jdbc-type="VARCHAR" index="true" />
+-		<field-descriptor name="versionNumber" column="VER_NBR"
+-			jdbc-type="BIGINT" locking="true" />
+-		<field-descriptor name="capitalAssetDescription"
+-			column="CPTLAST_DESC" jdbc-type="VARCHAR" />
+-		<field-descriptor name="capitalAssetTypeCode" column="CPTLAST_TYP_CD"
+-			jdbc-type="VARCHAR" />
+-		<field-descriptor name="conditionCode" column="CPTLAST_COND_CD"
+-			jdbc-type="VARCHAR" />
+-		<field-descriptor name="createDate" column="CPTLAST_CRT_DT"
+-			jdbc-type="DATE" />
+-		<field-descriptor name="receiveDate" column="CPTLAST_RECEIVE_DT"
+-			jdbc-type="DATE" />
+-		<field-descriptor name="loanReturnDate" column="CPTLAST_LN_RTRN_DT"
+-			jdbc-type="DATE" />
+-		<field-descriptor name="loanDate" column="CPTLAST_LOAN_DT"
+-			jdbc-type="DATE" />
+-		<field-descriptor name="expectedReturnDate" column="AST_EXPCTRETURN_DT"
+-			jdbc-type="DATE" />
+-		<field-descriptor name="financialDocumentPostingPeriodCode"
+-			column="FDOC_POST_PRD_CD" jdbc-type="VARCHAR" />
+-		<field-descriptor name="financialDocumentPostingYear"
+-			column="FDOC_POST_YR" jdbc-type="INTEGER" />
+-		<field-descriptor name="organizationOwnerAccountNumber"
+-			column="ORG_OWNER_ACCT_NBR" jdbc-type="VARCHAR" />
+-		<field-descriptor name="organizationOwnerChartOfAccountsCode"
+-			column="ORG_OWNER_COA_CD" jdbc-type="VARCHAR" />
+-		<field-descriptor name="vendorName" column="CPTLAST_VENDOR_NM"
+-			jdbc-type="VARCHAR" />
+-		<field-descriptor name="acquisitionTypeCode" column="CPTLAST_ACQ_TYP_CD"
+-			jdbc-type="VARCHAR" />
+-		<field-descriptor name="totalCostAmount" column="CPTLAST_TOTCST_AMT"
+-			jdbc-type="DECIMAL" conversion="org.kuali.rice.kns.util.OjbKualiDecimalFieldConversion" />
+-		<field-descriptor name="replacementAmount" column="CPTLAST_RPLC_AMT"
+-			jdbc-type="DECIMAL" conversion="org.kuali.rice.kns.util.OjbKualiDecimalFieldConversion" />
+-		<field-descriptor name="salePrice" column="CPTLAST_SALE_PRC"
+-			jdbc-type="DECIMAL" conversion="org.kuali.rice.kns.util.OjbKualiDecimalFieldConversion" />
+-		<field-descriptor name="estimatedSellingPrice"
+-			column="AST_EST_SELL_PRC" jdbc-type="DECIMAL"
+-			conversion="org.kuali.rice.kns.util.OjbKualiDecimalFieldConversion" />
+-		<field-descriptor name="salvageAmount" column="CPTLAST_SALVAG_AMT"
+-			jdbc-type="DECIMAL" conversion="org.kuali.rice.kns.util.OjbKualiDecimalFieldConversion" />
+-		<field-descriptor name="campusCode" column="CAMPUS_CD"
+-			jdbc-type="VARCHAR" />
+-		<field-descriptor name="buildingCode" column="BLDG_CD"
+-			jdbc-type="VARCHAR" />
+-		<field-descriptor name="buildingRoomNumber" column="BLDG_ROOM_NBR"
+-			jdbc-type="VARCHAR" />
+-		<field-descriptor name="buildingSubRoomNumber"
+-			column="BLDG_SUB_ROOM_NBR" jdbc-type="VARCHAR" />
+-		<field-descriptor name="retirementChartOfAccountsCode"
+-			column="AST_RETIR_COA_CD" jdbc-type="VARCHAR" />
+-		<field-descriptor name="retirementAccountNumber"
+-			column="AST_RETIR_ACCT_NBR" jdbc-type="VARCHAR" />
+-		<field-descriptor name="retirementReasonCode" column="AST_RETIRE_REAS_CD"
+-			jdbc-type="VARCHAR" />
+-		<field-descriptor name="retirementPeriodCode" column="AST_RETIR_PRD_CD"
+-			jdbc-type="VARCHAR" />
+-		<field-descriptor name="retirementFiscalYear" column="AST_RETIR_FSCL_YR"
+-			jdbc-type="INTEGER" />
+-		<field-descriptor name="cashReceiptFinancialDocumentNumber"
+-			column="CASH_RCPT_FDOC_NBR" jdbc-type="VARCHAR" />
+-		<field-descriptor name="primaryDepreciationMethodCode"
+-			column="AST_DEPR_MTHD1_CD" jdbc-type="VARCHAR" />
+-		<field-descriptor name="estimatedFabricationCompletionDate"
+-			column="AST_ESTFABRCMPL_DT" jdbc-type="DATE" />
+-		<field-descriptor name="fabricationEstimatedTotalAmount"
+-			column="AST_FABRESTTOT_AMT" jdbc-type="DECIMAL"
+-			conversion="org.kuali.rice.kns.util.OjbKualiDecimalFieldConversion" />
+-		<field-descriptor name="transferOfFundsFinancialDocumentNumber"
+-			column="TRNFR_FND_FDOC_NBR" jdbc-type="VARCHAR" />
+-		<field-descriptor name="inventoryStatusCode" column="AST_INVN_STAT_CD"
+-			jdbc-type="VARCHAR" />
+-		<field-descriptor name="campusTagNumber" column="CPTLAST_TAG_NBR"
+-			jdbc-type="VARCHAR" />
+-		<field-descriptor name="lastInventoryDate" column="CPTLAST_LSTINVN_DT"
+-			jdbc-type="TIMESTAMP" />
+-		<field-descriptor name="organizationInventoryName"
+-			column="ORG_INVN_NM" jdbc-type="VARCHAR" />
+-		<field-descriptor name="oldTagNumber" column="CPTLAST_OLDTAG_NBR"
+-			jdbc-type="VARCHAR" />
+-		<field-descriptor name="manufacturerName" column="CPTLAST_MFR_NM"
+-			jdbc-type="VARCHAR" />
+-		<field-descriptor name="manufacturerModelNumber"
+-			column="CPTLAST_MFRMDL_NBR" jdbc-type="VARCHAR" />
+-		<field-descriptor name="serialNumber" column="CPTLAST_SERIAL_NBR"
+-			jdbc-type="VARCHAR" />
+-		<field-descriptor name="representativeUniversalIdentifier"
+-			column="AST_REP_UNVL_ID" jdbc-type="VARCHAR" />
+-		<field-descriptor name="agencyNumber" column="CG_AGENCY_NBR"
+-			jdbc-type="VARCHAR" />
+-		<field-descriptor name="campusPoliceDepartmentCaseNumber"
+-			column="AST_PD_CASE_NBR" jdbc-type="VARCHAR" />
+-		<field-descriptor name="inventoryScannedCode" column="AST_INVN_SCAN_CD"
+-			jdbc-type="VARCHAR" />
+-		<field-descriptor name="capitalAssetInServiceDate"
+-			column="CPTL_AST_IN_SRVC_DT" jdbc-type="DATE" />
+-		<field-descriptor name="governmentTagNumber" column="CPTL_AST_GOV_TAG_NBR"
+-			jdbc-type="VARCHAR" />
+-		<field-descriptor name="nationalStockNumber" column="CPTL_AST_NTL_STOCK_NBR"
+-			jdbc-type="VARCHAR" />
+-		<field-descriptor name="landCountyName" column="CPTL_AST_LAND_CNTY_NM"
+-			jdbc-type="VARCHAR" />
+-		<field-descriptor name="landAcreageSize" column="CPTL_AST_LAND_ACRG_SZ"
+-			jdbc-type="INTEGER" />
+-		<field-descriptor name="landParcelNumber" column="CPTL_AST_LAND_PRCL_NBR"
+-			jdbc-type="VARCHAR" />
+-		<field-descriptor name="depreciationDate" column="CPTL_AST_DEPR_DT"
+-			jdbc-type="DATE" />
+-		<field-descriptor name="financialObjectSubTypeCode"
+-			column="FIN_OBJ_SUB_TYP_CD" jdbc-type="VARCHAR" />
+-		<field-descriptor name="fabricationEstimatedRetentionYears"
+-			column="AST_FABR_EST_RETN_YRS" jdbc-type="INTEGER" />
++ </class-descriptor>
+ 
+-		<reference-descriptor name="capitalAssetType"
+-			class-ref="org.kuali.kfs.module.cam.businessobject.AssetType"
+-			auto-retrieve="true" auto-update="none" auto-delete="none" proxy="true">
+-			<foreignkey field-ref="capitalAssetTypeCode" />
+-		</reference-descriptor>
+-		<reference-descriptor name="organizationOwnerAccount"
+-			class-ref="org.kuali.kfs.coa.businessobject.Account" auto-retrieve="true"
+-			auto-update="none" auto-delete="none" proxy="true">
+-			<foreignkey field-ref="organizationOwnerChartOfAccountsCode" />
+-			<foreignkey field-ref="organizationOwnerAccountNumber" />
+-		</reference-descriptor>
+-		<reference-descriptor name="organizationOwnerChartOfAccounts"
+-			class-ref="org.kuali.kfs.coa.businessobject.Chart" auto-retrieve="true"
+-			auto-update="none" auto-delete="none" proxy="true">
+-			<foreignkey field-ref="organizationOwnerChartOfAccountsCode" />
+-		</reference-descriptor>
+-		<reference-descriptor name="buildingRoom"
+-			class-ref="org.kuali.kfs.sys.businessobject.Room" auto-retrieve="true"
+-			auto-update="none" auto-delete="none" proxy="true">
+-			<foreignkey field-ref="campusCode" />
+-			<foreignkey field-ref="buildingCode" />
+-			<foreignkey field-ref="buildingRoomNumber" />
+-		</reference-descriptor>
+-		<reference-descriptor name="retirementAccount"
+-			class-ref="org.kuali.kfs.coa.businessobject.Account" auto-retrieve="true"
+-			auto-update="none" auto-delete="none" proxy="true">
+-			<foreignkey field-ref="retirementChartOfAccountsCode" />
+-			<foreignkey field-ref="retirementAccountNumber" />
+-		</reference-descriptor>
+-		<reference-descriptor name="retirementChartOfAccounts"
+-			class-ref="org.kuali.kfs.coa.businessobject.Chart" auto-retrieve="true"
+-			auto-update="none" auto-delete="none" proxy="true">
+-			<foreignkey field-ref="retirementChartOfAccountsCode" />
+-		</reference-descriptor>
+-		<reference-descriptor name="financialDocumentPostingPeriod"
+-			class-ref="org.kuali.kfs.coa.businessobject.AccountingPeriod"
+-			auto-retrieve="true" auto-update="none" auto-delete="none" proxy="true">
+-			<foreignkey field-ref="financialDocumentPostingYear" />
+-			<foreignkey field-ref="financialDocumentPostingPeriodCode" />
+-		</reference-descriptor>
+-		<reference-descriptor name="building"
+-			class-ref="org.kuali.kfs.sys.businessobject.Building" auto-retrieve="true"
+-			auto-update="none" auto-delete="none" proxy="true">
+-			<foreignkey field-ref="campusCode" />
+-			<foreignkey field-ref="buildingCode" />
+-		</reference-descriptor>
+-		<reference-descriptor name="retirementPeriod"
+-			class-ref="org.kuali.kfs.coa.businessobject.AccountingPeriod"
+-			auto-retrieve="true" auto-update="none" auto-delete="none" proxy="true">
+-			<foreignkey field-ref="retirementFiscalYear" />
+-			<foreignkey field-ref="retirementPeriodCode" />
+-		</reference-descriptor>
+-		<reference-descriptor name="retirementReason"
+-			class-ref="org.kuali.kfs.module.cam.businessobject.AssetRetirementReason"
+-			auto-retrieve="true" auto-update="none" auto-delete="none" proxy="true">
+-			<foreignkey field-ref="retirementReasonCode" />
+-		</reference-descriptor>
+-		<reference-descriptor name="cashReceiptFinancialDocument"
+-			class-ref="org.kuali.kfs.sys.businessobject.FinancialSystemDocumentHeader"
+-			auto-retrieve="true" auto-update="none" auto-delete="none" proxy="true">
+-			<foreignkey field-ref="cashReceiptFinancialDocumentNumber" />
+-		</reference-descriptor>
+-		<reference-descriptor name="transferOfFundsFinancialDocument"
+-			class-ref="org.kuali.kfs.sys.businessobject.FinancialSystemDocumentHeader"
+-			auto-retrieve="true" auto-update="none" auto-delete="none" proxy="true">
+-			<foreignkey field-ref="transferOfFundsFinancialDocumentNumber" />
+-		</reference-descriptor>
+-		<reference-descriptor name="condition"
+-			class-ref="org.kuali.kfs.module.cam.businessobject.AssetCondition"
+-			auto-retrieve="true" auto-update="none" auto-delete="none" proxy="true">
+-			<foreignkey field-ref="conditionCode" />
+-		</reference-descriptor>
+-		<reference-descriptor name="inventoryStatus"
+-			class-ref="org.kuali.kfs.module.cam.businessobject.AssetStatus"
+-			auto-retrieve="true" auto-update="none" auto-delete="none" proxy="true">
+-			<foreignkey field-ref="inventoryStatusCode" />
+-		</reference-descriptor>
+-		<collection-descriptor name="assetPayments"
+-			element-class-ref="org.kuali.kfs.module.cam.businessobject.AssetPayment"
+-			collection-class="org.apache.ojb.broker.util.collections.ManageableArrayList"
+-			auto-retrieve="true" auto-update="object" auto-delete="object" proxy="true">
+-			<orderby name="financialDocumentPostingDate" sort="ASC" />
+-			<orderby name="paymentSequenceNumber" sort="ASC" />
+-			<inverse-foreignkey field-ref="capitalAssetNumber" />
+-		</collection-descriptor>
+-		<reference-descriptor name="assetOrganization"
+-			class-ref="org.kuali.kfs.module.cam.businessobject.AssetOrganization"
+-			auto-retrieve="true" auto-update="object" auto-delete="object" proxy="true">
+-			<foreignkey field-ref="capitalAssetNumber" />
+-		</reference-descriptor>
+-		<reference-descriptor name="assetWarranty"
+-			class-ref="org.kuali.kfs.module.cam.businessobject.AssetWarranty"
+-			auto-retrieve="true" auto-update="object" auto-delete="true" proxy="true">
+-			<foreignkey field-ref="capitalAssetNumber" />
+-		</reference-descriptor>
+-		<collection-descriptor name="assetRepairHistory"
+-			element-class-ref="org.kuali.kfs.module.cam.businessobject.AssetRepairHistory"
+-			collection-class="org.apache.ojb.broker.util.collections.ManageableArrayList"
+-			auto-retrieve="true" auto-delete="object" auto-update="object" proxy="true">
+-			<inverse-foreignkey field-ref="capitalAssetNumber" />
+-		</collection-descriptor>
+-		<collection-descriptor name="assetComponents"
+-			element-class-ref="org.kuali.kfs.module.cam.businessobject.AssetComponent"
+-			collection-class="org.apache.ojb.broker.util.collections.ManageableArrayList"
+-			auto-retrieve="true" auto-delete="object" auto-update="object" proxy="true">
+-			<inverse-foreignkey field-ref="capitalAssetNumber" />
+-		</collection-descriptor>
+-		<collection-descriptor name="assetLocations"
+-			element-class-ref="org.kuali.kfs.module.cam.businessobject.AssetLocation"
+-			collection-class="org.apache.ojb.broker.util.collections.ManageableArrayList"
+-			auto-retrieve="true" auto-update="object" auto-delete="object" proxy="true">
+-			<inverse-foreignkey field-ref="capitalAssetNumber" />
+-		</collection-descriptor>
+-		<collection-descriptor name="assetRetirementHistory"
+-			element-class-ref="org.kuali.kfs.module.cam.businessobject.AssetRetirementGlobalDetail"
+-			collection-class="org.apache.ojb.broker.util.collections.ManageableArrayList"
+-			auto-retrieve="true" auto-update="none" auto-delete="none" proxy="true">
+-			<inverse-foreignkey field-ref="capitalAssetNumber" />
+-		</collection-descriptor>
+-		<collection-descriptor name="retirementGlobals"
+-			element-class-ref="org.kuali.kfs.module.cam.businessobject.AssetRetirementGlobal"
+-			collection-class="org.apache.ojb.broker.util.collections.ManageableArrayList"
+-			auto-retrieve="true" auto-update="none" auto-delete="none" proxy="true">
+-			<inverse-foreignkey field-ref="mergedTargetCapitalAssetNumber" />
+-		</collection-descriptor>
+-		<reference-descriptor name="assetPrimaryDepreciationMethod"
+-			class-ref="org.kuali.kfs.module.cam.businessobject.AssetDepreciationMethod"
+-			auto-retrieve="true" auto-update="none" auto-delete="none" proxy="true">
+-			<foreignkey field-ref="primaryDepreciationMethodCode" />
+-		</reference-descriptor>
+-		<reference-descriptor name="financialObjectSubType"
+-			class-ref="org.kuali.kfs.coa.businessobject.ObjectSubType"
+-			auto-retrieve="true" auto-update="none" auto-delete="none" proxy="true">
+-			<foreignkey field-ref="financialObjectSubTypeCode" />
+-		</reference-descriptor>
+-		<reference-descriptor name="acquisitionType"
+-			class-ref="org.kuali.kfs.module.cam.businessobject.AssetAcquisitionType"
+-			auto-retrieve="true" auto-update="none" auto-delete="none" proxy="true">
+-			<foreignkey field-ref="acquisitionTypeCode" />
+-		</reference-descriptor>
+ 
+-		<reference-descriptor name="extension"
+-			class-ref="edu.arizona.kfs.module.cam.businessobject.AssetExtension"
+-			auto-retrieve="true" auto-update="object" auto-delete="object" proxy="false">
+-			<foreignkey field-ref="capitalAssetNumber" />
+-		</reference-descriptor>
++ <class-descriptor
++  class="edu.arizona.kfs.module.cam.businessobject.AssetExtension"
++  table="CM_CPTLAST_EXT_T">
+ 
+-</class-descriptor>
++  <field-descriptor name="capitalAssetNumber" column="CPTLAST_NBR"
++   jdbc-type="BIGINT" primarykey="true" index="true" />
+ 
++  <field-descriptor name="objectId" column="OBJ_ID"
++   jdbc-type="VARCHAR" index="true" />
+ 
++  <field-descriptor name="versionNumber" column="VER_NBR"
++   jdbc-type="BIGINT" locking="true" />
++
++  <field-descriptor name="inventoryUnitCode" column="INV_UNIT_CD"
++   jdbc-type="VARCHAR" locking="true" />
++
++  <field-descriptor name="inventoryUnitOrganizationCode"
++   column="ORG_CD" jdbc-type="VARCHAR" locking="true" />
++
++  <field-descriptor name="inventoryUnitChartOfAccountsCode"
++   column="FIN_COA_CD" jdbc-type="VARCHAR" locking="true" />
++
++  <reference-descriptor name="assetObj"
++   class-ref="org.kuali.kfs.module.cam.businessobject.Asset"
++   auto-retrieve="true" auto-update="object" auto-delete="object" proxy="true">
++   <foreignkey field-ref="capitalAssetNumber" />
++  </reference-descriptor>
++
++  <reference-descriptor name="assetInvUnitObj"
++   class-ref="edu.arizona.kfs.module.cam.businessobject.AssetInventoryUnit"
++   auto-retrieve="true" auto-update="object" auto-delete="object" proxy="false">
++   <foreignkey field-ref="inventoryUnitCode" />
++   <foreignkey field-ref="inventoryUnitChartOfAccountsCode" />
++   <foreignkey field-ref="inventoryUnitOrganizationCode" />
++
++  </reference-descriptor>
++
++  <collection-descriptor name="assetAwardHistory"
++   element-class-ref="edu.arizona.kfs.module.cam.businessobject.AssetAwardHistory"
++   collection-class="org.apache.ojb.broker.util.collections.ManageableArrayList"
++   auto-retrieve="true" auto-delete="object" auto-update="object" proxy="true">
++   <orderby name="effectiveDate" sort="ASC" />
++   <inverse-foreignkey field-ref="capitalAssetNumber" />
++  </collection-descriptor>
++
++ </class-descriptor>
++
++
++ <class-descriptor
++  class="edu.arizona.kfs.module.cam.businessobject.AssetAwardHistory"
++  table="CM_CPTLAST_AWARD_HIST_T">
++  <field-descriptor name="awardHistoryNumber" column="CM_CPTLAST_AWARD_HIST_NBR"
++   jdbc-type="BIGINT" primarykey="true" index="true" autoincrement="true"
++   sequence-name="CM_CPTLAST_AWARD_HIST_NBR_SEQ" />
++  <field-descriptor name="objectId" column="OBJ_ID"
++   jdbc-type="VARCHAR" index="true" />
++  <field-descriptor name="versionNumber" column="VER_NBR"
++   jdbc-type="BIGINT" locking="true" />
++  <field-descriptor name="chartOfAccountsCode" column="FIN_COA_CD"
++   jdbc-type="VARCHAR" />
++  <field-descriptor name="capitalAssetNumber" column="CPTLAST_NBR"
++   jdbc-type="BIGINT" index="true" />
++  <field-descriptor name="accountNumber" column="ORG_OWNER_ACCT_NBR"
++   jdbc-type="VARCHAR" />
++  <field-descriptor name="agencyNumber" column="CG_AGENCY_NBR"
++   jdbc-type="VARCHAR" />
++  <field-descriptor name="grantNumber" column="GRANT_NBR"
++   jdbc-type="VARCHAR" />
++  <field-descriptor name="effectiveDate" column="EFFECTIVE_DT"
++   jdbc-type="DATE" />
++
++  <reference-descriptor name="accountObj"
++   class-ref="org.kuali.kfs.coa.businessobject.Account" auto-retrieve="true"
++   auto-update="none" auto-delete="none" proxy="true">
++   <foreignkey field-ref="chartOfAccountsCode" />
++   <foreignkey field-ref="accountNumber" />
++  </reference-descriptor>
++
++  <reference-descriptor name="asset"
++   class-ref="org.kuali.kfs.module.cam.businessobject.Asset"
++   auto-retrieve="true" auto-update="none" auto-delete="none" proxy="true">
++   <foreignkey field-ref="capitalAssetNumber" />
++  </reference-descriptor>
++
++  <reference-descriptor name="coaCodeObj"
++   class-ref="org.kuali.kfs.coa.businessobject.Chart" auto-retrieve="true"
++   auto-update="none" auto-delete="none" proxy="true">
++   <foreignkey field-ref="chartOfAccountsCode" />
++  </reference-descriptor>
++
++  <reference-descriptor name="agencyObj"
++   class-ref="org.kuali.kfs.module.cg.businessobject.Agency"
++   auto-retrieve="true" auto-update="none" auto-delete="none" proxy="true">
++   <foreignkey field-ref="agencyNumber" />
++  </reference-descriptor>
++
++ </class-descriptor>
++
++
++
++
++ <class-descriptor class="org.kuali.kfs.module.cam.businessobject.Asset"
++  table="CM_CPTLAST_T">
++  <field-descriptor name="capitalAssetNumber" column="CPTLAST_NBR"
++   jdbc-type="BIGINT" primarykey="true" index="true" autoincrement="true"
++   sequence-name="CPTLAST_NBR_SEQ" />
++  <field-descriptor name="objectId" column="OBJ_ID"
++   jdbc-type="VARCHAR" index="true" />
++  <field-descriptor name="versionNumber" column="VER_NBR"
++   jdbc-type="BIGINT" locking="true" />
++  <field-descriptor name="capitalAssetDescription"
++   column="CPTLAST_DESC" jdbc-type="VARCHAR" />
++  <field-descriptor name="capitalAssetTypeCode" column="CPTLAST_TYP_CD"
++   jdbc-type="VARCHAR" />
++  <field-descriptor name="conditionCode" column="CPTLAST_COND_CD"
++   jdbc-type="VARCHAR" />
++  <field-descriptor name="createDate" column="CPTLAST_CRT_DT"
++   jdbc-type="DATE" />
++  <field-descriptor name="receiveDate" column="CPTLAST_RECEIVE_DT"
++   jdbc-type="DATE" />
++  <field-descriptor name="loanReturnDate" column="CPTLAST_LN_RTRN_DT"
++   jdbc-type="DATE" />
++  <field-descriptor name="loanDate" column="CPTLAST_LOAN_DT"
++   jdbc-type="DATE" />
++  <field-descriptor name="expectedReturnDate" column="AST_EXPCTRETURN_DT"
++   jdbc-type="DATE" />
++  <field-descriptor name="financialDocumentPostingPeriodCode"
++   column="FDOC_POST_PRD_CD" jdbc-type="VARCHAR" />
++  <field-descriptor name="financialDocumentPostingYear"
++   column="FDOC_POST_YR" jdbc-type="INTEGER" />
++  <field-descriptor name="organizationOwnerAccountNumber"
++   column="ORG_OWNER_ACCT_NBR" jdbc-type="VARCHAR" />
++  <field-descriptor name="organizationOwnerChartOfAccountsCode"
++   column="ORG_OWNER_COA_CD" jdbc-type="VARCHAR" />
++  <field-descriptor name="vendorName" column="CPTLAST_VENDOR_NM"
++   jdbc-type="VARCHAR" />
++  <field-descriptor name="acquisitionTypeCode" column="CPTLAST_ACQ_TYP_CD"
++   jdbc-type="VARCHAR" />
++  <field-descriptor name="totalCostAmount" column="CPTLAST_TOTCST_AMT"
++   jdbc-type="DECIMAL" conversion="org.kuali.rice.kns.util.OjbKualiDecimalFieldConversion" />
++  <field-descriptor name="replacementAmount" column="CPTLAST_RPLC_AMT"
++   jdbc-type="DECIMAL" conversion="org.kuali.rice.kns.util.OjbKualiDecimalFieldConversion" />
++  <field-descriptor name="salePrice" column="CPTLAST_SALE_PRC"
++   jdbc-type="DECIMAL" conversion="org.kuali.rice.kns.util.OjbKualiDecimalFieldConversion" />
++  <field-descriptor name="estimatedSellingPrice"
++   column="AST_EST_SELL_PRC" jdbc-type="DECIMAL"
++   conversion="org.kuali.rice.kns.util.OjbKualiDecimalFieldConversion" />
++  <field-descriptor name="salvageAmount" column="CPTLAST_SALVAG_AMT"
++   jdbc-type="DECIMAL" conversion="org.kuali.rice.kns.util.OjbKualiDecimalFieldConversion" />
++  <field-descriptor name="campusCode" column="CAMPUS_CD"
++   jdbc-type="VARCHAR" />
++  <field-descriptor name="buildingCode" column="BLDG_CD"
++   jdbc-type="VARCHAR" />
++  <field-descriptor name="buildingRoomNumber" column="BLDG_ROOM_NBR"
++   jdbc-type="VARCHAR" />
++  <field-descriptor name="buildingSubRoomNumber"
++   column="BLDG_SUB_ROOM_NBR" jdbc-type="VARCHAR" />
++  <field-descriptor name="retirementChartOfAccountsCode"
++   column="AST_RETIR_COA_CD" jdbc-type="VARCHAR" />
++  <field-descriptor name="retirementAccountNumber"
++   column="AST_RETIR_ACCT_NBR" jdbc-type="VARCHAR" />
++  <field-descriptor name="retirementReasonCode" column="AST_RETIRE_REAS_CD"
++   jdbc-type="VARCHAR" />
++  <field-descriptor name="retirementPeriodCode" column="AST_RETIR_PRD_CD"
++   jdbc-type="VARCHAR" />
++  <field-descriptor name="retirementFiscalYear" column="AST_RETIR_FSCL_YR"
++   jdbc-type="INTEGER" />
++  <field-descriptor name="cashReceiptFinancialDocumentNumber"
++   column="CASH_RCPT_FDOC_NBR" jdbc-type="VARCHAR" />
++  <field-descriptor name="primaryDepreciationMethodCode"
++   column="AST_DEPR_MTHD1_CD" jdbc-type="VARCHAR" />
++  <field-descriptor name="estimatedFabricationCompletionDate"
++   column="AST_ESTFABRCMPL_DT" jdbc-type="DATE" />
++  <field-descriptor name="fabricationEstimatedTotalAmount"
++   column="AST_FABRESTTOT_AMT" jdbc-type="DECIMAL"
++   conversion="org.kuali.rice.kns.util.OjbKualiDecimalFieldConversion" />
++  <field-descriptor name="transferOfFundsFinancialDocumentNumber"
++   column="TRNFR_FND_FDOC_NBR" jdbc-type="VARCHAR" />
++  <field-descriptor name="inventoryStatusCode" column="AST_INVN_STAT_CD"
++   jdbc-type="VARCHAR" />
++  <field-descriptor name="campusTagNumber" column="CPTLAST_TAG_NBR"
++   jdbc-type="VARCHAR" />
++  <field-descriptor name="lastInventoryDate" column="CPTLAST_LSTINVN_DT"
++   jdbc-type="TIMESTAMP" />
++  <field-descriptor name="organizationInventoryName"
++   column="ORG_INVN_NM" jdbc-type="VARCHAR" />
++  <field-descriptor name="oldTagNumber" column="CPTLAST_OLDTAG_NBR"
++   jdbc-type="VARCHAR" />
++  <field-descriptor name="manufacturerName" column="CPTLAST_MFR_NM"
++   jdbc-type="VARCHAR" />
++  <field-descriptor name="manufacturerModelNumber"
++   column="CPTLAST_MFRMDL_NBR" jdbc-type="VARCHAR" />
++  <field-descriptor name="serialNumber" column="CPTLAST_SERIAL_NBR"
++   jdbc-type="VARCHAR" />
++  <field-descriptor name="representativeUniversalIdentifier"
++   column="AST_REP_UNVL_ID" jdbc-type="VARCHAR" />
++  <field-descriptor name="agencyNumber" column="CG_AGENCY_NBR"
++   jdbc-type="VARCHAR" />
++  <field-descriptor name="campusPoliceDepartmentCaseNumber"
++   column="AST_PD_CASE_NBR" jdbc-type="VARCHAR" />
++  <field-descriptor name="inventoryScannedCode" column="AST_INVN_SCAN_CD"
++   jdbc-type="VARCHAR" />
++  <field-descriptor name="capitalAssetInServiceDate"
++   column="CPTL_AST_IN_SRVC_DT" jdbc-type="DATE" />
++  <field-descriptor name="governmentTagNumber" column="CPTL_AST_GOV_TAG_NBR"
++   jdbc-type="VARCHAR" />
++  <field-descriptor name="nationalStockNumber" column="CPTL_AST_NTL_STOCK_NBR"
++   jdbc-type="VARCHAR" />
++  <field-descriptor name="landCountyName" column="CPTL_AST_LAND_CNTY_NM"
++   jdbc-type="VARCHAR" />
++  <field-descriptor name="landAcreageSize" column="CPTL_AST_LAND_ACRG_SZ"
++   jdbc-type="INTEGER" />
++  <field-descriptor name="landParcelNumber" column="CPTL_AST_LAND_PRCL_NBR"
++   jdbc-type="VARCHAR" />
++  <field-descriptor name="depreciationDate" column="CPTL_AST_DEPR_DT"
++   jdbc-type="DATE" />
++  <field-descriptor name="financialObjectSubTypeCode"
++   column="FIN_OBJ_SUB_TYP_CD" jdbc-type="VARCHAR" />
++  <field-descriptor name="fabricationEstimatedRetentionYears"
++   column="AST_FABR_EST_RETN_YRS" jdbc-type="INTEGER" />
++
++  <reference-descriptor name="capitalAssetType"
++   class-ref="org.kuali.kfs.module.cam.businessobject.AssetType"
++   auto-retrieve="true" auto-update="none" auto-delete="none" proxy="true">
++   <foreignkey field-ref="capitalAssetTypeCode" />
++  </reference-descriptor>
++  <reference-descriptor name="organizationOwnerAccount"
++   class-ref="org.kuali.kfs.coa.businessobject.Account" auto-retrieve="true"
++   auto-update="none" auto-delete="none" proxy="true">
++   <foreignkey field-ref="organizationOwnerChartOfAccountsCode" />
++   <foreignkey field-ref="organizationOwnerAccountNumber" />
++  </reference-descriptor>
++  <reference-descriptor name="organizationOwnerChartOfAccounts"
++   class-ref="org.kuali.kfs.coa.businessobject.Chart" auto-retrieve="true"
++   auto-update="none" auto-delete="none" proxy="true">
++   <foreignkey field-ref="organizationOwnerChartOfAccountsCode" />
++  </reference-descriptor>
++  <reference-descriptor name="buildingRoom"
++   class-ref="org.kuali.kfs.sys.businessobject.Room" auto-retrieve="true"
++   auto-update="none" auto-delete="none" proxy="true">
++   <foreignkey field-ref="campusCode" />
++   <foreignkey field-ref="buildingCode" />
++   <foreignkey field-ref="buildingRoomNumber" />
++  </reference-descriptor>
++  <reference-descriptor name="retirementAccount"
++   class-ref="org.kuali.kfs.coa.businessobject.Account" auto-retrieve="true"
++   auto-update="none" auto-delete="none" proxy="true">
++   <foreignkey field-ref="retirementChartOfAccountsCode" />
++   <foreignkey field-ref="retirementAccountNumber" />
++  </reference-descriptor>
++  <reference-descriptor name="retirementChartOfAccounts"
++   class-ref="org.kuali.kfs.coa.businessobject.Chart" auto-retrieve="true"
++   auto-update="none" auto-delete="none" proxy="true">
++   <foreignkey field-ref="retirementChartOfAccountsCode" />
++  </reference-descriptor>
++  <reference-descriptor name="financialDocumentPostingPeriod"
++   class-ref="org.kuali.kfs.coa.businessobject.AccountingPeriod"
++   auto-retrieve="true" auto-update="none" auto-delete="none" proxy="true">
++   <foreignkey field-ref="financialDocumentPostingYear" />
++   <foreignkey field-ref="financialDocumentPostingPeriodCode" />
++  </reference-descriptor>
++  <reference-descriptor name="building"
++   class-ref="org.kuali.kfs.sys.businessobject.Building" auto-retrieve="true"
++   auto-update="none" auto-delete="none" proxy="true">
++   <foreignkey field-ref="campusCode" />
++   <foreignkey field-ref="buildingCode" />
++  </reference-descriptor>
++  <reference-descriptor name="retirementPeriod"
++   class-ref="org.kuali.kfs.coa.businessobject.AccountingPeriod"
++   auto-retrieve="true" auto-update="none" auto-delete="none" proxy="true">
++   <foreignkey field-ref="retirementFiscalYear" />
++   <foreignkey field-ref="retirementPeriodCode" />
++  </reference-descriptor>
++  <reference-descriptor name="retirementReason"
++   class-ref="org.kuali.kfs.module.cam.businessobject.AssetRetirementReason"
++   auto-retrieve="true" auto-update="none" auto-delete="none" proxy="true">
++   <foreignkey field-ref="retirementReasonCode" />
++  </reference-descriptor>
++  <reference-descriptor name="cashReceiptFinancialDocument"
++   class-ref="org.kuali.kfs.sys.businessobject.FinancialSystemDocumentHeader"
++   auto-retrieve="true" auto-update="none" auto-delete="none" proxy="true">
++   <foreignkey field-ref="cashReceiptFinancialDocumentNumber" />
++  </reference-descriptor>
++  <reference-descriptor name="transferOfFundsFinancialDocument"
++   class-ref="org.kuali.kfs.sys.businessobject.FinancialSystemDocumentHeader"
++   auto-retrieve="true" auto-update="none" auto-delete="none" proxy="true">
++   <foreignkey field-ref="transferOfFundsFinancialDocumentNumber" />
++  </reference-descriptor>
++  <reference-descriptor name="condition"
++   class-ref="org.kuali.kfs.module.cam.businessobject.AssetCondition"
++   auto-retrieve="true" auto-update="none" auto-delete="none" proxy="true">
++   <foreignkey field-ref="conditionCode" />
++  </reference-descriptor>
++  <reference-descriptor name="inventoryStatus"
++   class-ref="org.kuali.kfs.module.cam.businessobject.AssetStatus"
++   auto-retrieve="true" auto-update="none" auto-delete="none" proxy="true">
++   <foreignkey field-ref="inventoryStatusCode" />
++  </reference-descriptor>
++  <collection-descriptor name="assetPayments"
++   element-class-ref="org.kuali.kfs.module.cam.businessobject.AssetPayment"
++   collection-class="org.apache.ojb.broker.util.collections.ManageableArrayList"
++   auto-retrieve="true" auto-update="object" auto-delete="object" proxy="true">
++   <orderby name="financialDocumentPostingDate" sort="ASC" />
++   <orderby name="paymentSequenceNumber" sort="ASC" />
++   <inverse-foreignkey field-ref="capitalAssetNumber" />
++  </collection-descriptor>
++  <reference-descriptor name="assetOrganization"
++   class-ref="org.kuali.kfs.module.cam.businessobject.AssetOrganization"
++   auto-retrieve="true" auto-update="object" auto-delete="object" proxy="true">
++   <foreignkey field-ref="capitalAssetNumber" />
++  </reference-descriptor>
++  <reference-descriptor name="assetWarranty"
++   class-ref="org.kuali.kfs.module.cam.businessobject.AssetWarranty"
++   auto-retrieve="true" auto-update="object" auto-delete="true" proxy="true">
++   <foreignkey field-ref="capitalAssetNumber" />
++  </reference-descriptor>
++  <collection-descriptor name="assetRepairHistory"
++   element-class-ref="org.kuali.kfs.module.cam.businessobject.AssetRepairHistory"
++   collection-class="org.apache.ojb.broker.util.collections.ManageableArrayList"
++   auto-retrieve="true" auto-delete="object" auto-update="object" proxy="true">
++   <inverse-foreignkey field-ref="capitalAssetNumber" />
++  </collection-descriptor>
++  <collection-descriptor name="assetComponents"
++   element-class-ref="org.kuali.kfs.module.cam.businessobject.AssetComponent"
++   collection-class="org.apache.ojb.broker.util.collections.ManageableArrayList"
++   auto-retrieve="true" auto-delete="object" auto-update="object" proxy="true">
++   <inverse-foreignkey field-ref="capitalAssetNumber" />
++  </collection-descriptor>
++  <collection-descriptor name="assetLocations"
++   element-class-ref="org.kuali.kfs.module.cam.businessobject.AssetLocation"
++   collection-class="org.apache.ojb.broker.util.collections.ManageableArrayList"
++   auto-retrieve="true" auto-update="object" auto-delete="object" proxy="true">
++   <inverse-foreignkey field-ref="capitalAssetNumber" />
++  </collection-descriptor>
++  <collection-descriptor name="assetRetirementHistory"
++   element-class-ref="org.kuali.kfs.module.cam.businessobject.AssetRetirementGlobalDetail"
++   collection-class="org.apache.ojb.broker.util.collections.ManageableArrayList"
++   auto-retrieve="true" auto-update="none" auto-delete="none" proxy="true">
++   <inverse-foreignkey field-ref="capitalAssetNumber" />
++  </collection-descriptor>
++  <collection-descriptor name="retirementGlobals"
++   element-class-ref="org.kuali.kfs.module.cam.businessobject.AssetRetirementGlobal"
++   collection-class="org.apache.ojb.broker.util.collections.ManageableArrayList"
++   auto-retrieve="true" auto-update="none" auto-delete="none" proxy="true">
++   <inverse-foreignkey field-ref="mergedTargetCapitalAssetNumber" />
++  </collection-descriptor>
++  <reference-descriptor name="assetPrimaryDepreciationMethod"
++   class-ref="org.kuali.kfs.module.cam.businessobject.AssetDepreciationMethod"
++   auto-retrieve="true" auto-update="none" auto-delete="none" proxy="true">
++   <foreignkey field-ref="primaryDepreciationMethodCode" />
++  </reference-descriptor>
++  <reference-descriptor name="financialObjectSubType"
++   class-ref="org.kuali.kfs.coa.businessobject.ObjectSubType"
++   auto-retrieve="true" auto-update="none" auto-delete="none" proxy="true">
++   <foreignkey field-ref="financialObjectSubTypeCode" />
++  </reference-descriptor>
++  <reference-descriptor name="acquisitionType"
++   class-ref="org.kuali.kfs.module.cam.businessobject.AssetAcquisitionType"
++   auto-retrieve="true" auto-update="none" auto-delete="none" proxy="true">
++   <foreignkey field-ref="acquisitionTypeCode" />
++  </reference-descriptor>
++
++  <reference-descriptor name="extension"
++   class-ref="edu.arizona.kfs.module.cam.businessobject.AssetExtension"
++   auto-retrieve="true" auto-update="object" auto-delete="object" proxy="false">
++   <foreignkey field-ref="capitalAssetNumber" />
++  </reference-descriptor>
++
++ </class-descriptor>
++
++
++
++ <class-descriptor
++  class="org.kuali.kfs.module.cam.businessobject.AssetGlobalDetail"
++  table="CM_CPTLAST_DTL_T">
++  <field-descriptor name="documentNumber" column="FDOC_NBR"
++   jdbc-type="VARCHAR" primarykey="true" index="true" />
++  <field-descriptor name="capitalAssetNumber" column="CPTLAST_NBR"
++   jdbc-type="BIGINT" primarykey="true" index="true" autoincrement="true"
++   sequence-name="CPTLAST_NBR_SEQ" />
++  <field-descriptor name="objectId" column="OBJ_ID"
++   jdbc-type="VARCHAR" index="true" />
++  <field-descriptor name="versionNumber" column="VER_NBR"
++   jdbc-type="BIGINT" locking="true" />
++  <field-descriptor name="campusCode" column="CAMPUS_CD"
++   jdbc-type="VARCHAR" />
++  <field-descriptor name="buildingCode" column="BLDG_CD"
++   jdbc-type="VARCHAR" />
++  <field-descriptor name="serialNumber" column="CPTLAST_SERIAL_NBR"
++   jdbc-type="VARCHAR" />
++  <field-descriptor name="buildingRoomNumber" column="BLDG_ROOM_NBR"
++   jdbc-type="VARCHAR" />
++  <field-descriptor name="buildingSubRoomNumber"
++   column="BLDG_SUB_ROOM_NBR" jdbc-type="VARCHAR" />
++  <field-descriptor name="campusTagNumber" column="CPTLAST_TAG_NBR"
++   jdbc-type="VARCHAR" />
++  <field-descriptor name="organizationInventoryName"
++   column="ORG_INVN_NM" jdbc-type="VARCHAR" />
++  <field-descriptor name="organizationAssetTypeIdentifier"
++   column="ORG_CPTLAST_TYP_ID" jdbc-type="VARCHAR" />
++  <field-descriptor name="offCampusName" column="AST_OFFCMP_NM"
++   jdbc-type="VARCHAR" />
++  <field-descriptor name="offCampusAddress" column="AST_OFFCMP_ADDR"
++   jdbc-type="VARCHAR" />
++  <field-descriptor name="offCampusCityName" column="AST_OFFCMP_CITY_NM"
++   jdbc-type="VARCHAR" />
++  <field-descriptor name="offCampusStateCode" column="AST_OFFCMP_ST_CD"
++   jdbc-type="VARCHAR" />
++  <field-descriptor name="offCampusZipCode" column="AST_OFFCMP_ZIP_CD"
++   jdbc-type="VARCHAR" />
++  <field-descriptor name="offCampusCountryCode" column="AST_OFFCMP_CNTRY_CD"
++   jdbc-type="VARCHAR" />
++  <field-descriptor name="governmentTagNumber" column="CPTL_AST_GOV_TAG_NBR"
++   jdbc-type="VARCHAR" />
++  <field-descriptor name="nationalStockNumber" column="CPTL_AST_NTL_STOCK_NBR"
++   jdbc-type="VARCHAR" />
++  <field-descriptor name="representativeUniversalIdentifier"
++   column="AST_REP_UNVL_ID" jdbc-type="VARCHAR" />
++  <field-descriptor name="capitalAssetTypeCode" column="CPTLAST_TYP_CD"
++   jdbc-type="VARCHAR" />
++  <field-descriptor name="capitalAssetDescription"
++   column="CPTLAST_DESC" jdbc-type="VARCHAR" />
++  <field-descriptor name="manufacturerName" column="CPTLAST_MFR_NM"
++   jdbc-type="VARCHAR" />
++  <field-descriptor name="organizationText" column="ORG_TXT"
++   jdbc-type="VARCHAR" />
++  <field-descriptor name="manufacturerModelNumber"
++   column="CPTLAST_MFRMDL_NBR" jdbc-type="VARCHAR" />
++  <field-descriptor name="separateSourceAmount" column="SEP_SRC_AMT"
++   jdbc-type="DECIMAL" conversion="org.kuali.rice.kns.util.OjbKualiDecimalFieldConversion" />
++
++  <reference-descriptor name="asset"
++   class-ref="org.kuali.kfs.module.cam.businessobject.Asset"
++   auto-retrieve="true" auto-update="none" auto-delete="none" proxy="true">
++   <foreignkey field-ref="capitalAssetNumber" />
++  </reference-descriptor>
++  <reference-descriptor name="building"
++   class-ref="org.kuali.kfs.sys.businessobject.Building" auto-retrieve="true"
++   auto-update="none" auto-delete="none" proxy="true">
++   <foreignkey field-ref="campusCode" />
++   <foreignkey field-ref="buildingCode" />
++  </reference-descriptor>
++  <reference-descriptor name="buildingRoom"
++   class-ref="org.kuali.kfs.sys.businessobject.Room" auto-retrieve="true"
++   auto-update="none" auto-delete="none" proxy="true">
++   <foreignkey field-ref="campusCode" />
++   <foreignkey field-ref="buildingCode" />
++   <foreignkey field-ref="buildingRoomNumber" />
++  </reference-descriptor>
++
++  <reference-descriptor name="extension"
++   class-ref="edu.arizona.kfs.module.cam.businessobject.AssetGlobalDetailExtension"
++   auto-retrieve="true" auto-update="object" auto-delete="object" proxy="false">
++   <foreignkey field-ref="documentNumber" />
++   <foreignkey field-ref="capitalAssetNumber" />
++  </reference-descriptor>
++
++ </class-descriptor> 
++
++
++ <class-descriptor
++  class="edu.arizona.kfs.module.cam.businessobject.AssetGlobalDetailExtension"
++  table="CM_CPTLAST_DTL_EXTEN_T">
++
++  <field-descriptor name="documentNumber" column="FDOC_NBR"
++   jdbc-type="VARCHAR" primarykey="true" index="true" />
++
++  <field-descriptor name="capitalAssetNumber" column="CPTLAST_NBR"
++   jdbc-type="BIGINT" primarykey="true" index="true" />
++
++  <field-descriptor name="objectId" column="OBJ_ID"
++   jdbc-type="VARCHAR" index="true" />
++
++  <field-descriptor name="versionNumber" column="VER_NBR"
++   jdbc-type="BIGINT" locking="true" />
++
++  <field-descriptor name="inventoryUnitCode" column="INV_UNIT_CD"
++   jdbc-type="VARCHAR" locking="true" />
++
++  <field-descriptor name="inventoryUnitOrganizationCode"
++   column="ORG_CD" jdbc-type="VARCHAR" locking="true" />
++
++  <field-descriptor name="inventoryUnitChartOfAccountsCode"
++   column="FIN_COA_CD" jdbc-type="VARCHAR" locking="true" />
++
++  <reference-descriptor name="assetGlobalDetailObj"
++   class-ref="org.kuali.kfs.module.cam.businessobject.AssetGlobalDetail"
++   auto-retrieve="true" auto-update="object" auto-delete="object" proxy="true">
++   <foreignkey field-ref="documentNumber" />
++   <foreignkey field-ref="capitalAssetNumber" />
++  </reference-descriptor>
++
++  <reference-descriptor name="assetInvUnitObj"
++   class-ref="edu.arizona.kfs.module.cam.businessobject.AssetInventoryUnit"
++   auto-retrieve="true" auto-update="object" auto-delete="object" proxy="false">
++   <foreignkey field-ref="inventoryUnitCode" />
++   <foreignkey field-ref="inventoryUnitChartOfAccountsCode" />
++   <foreignkey field-ref="inventoryUnitOrganizationCode" />
++
++  </reference-descriptor>
++
++
++
++ </class-descriptor>
++
++
+ </descriptor-repository>
+ 
+Index: financial-system/kfs/trunk/work/src/edu/arizona/kfs/module/cam/KFSKeyConstants.java
+===================================================================
+--- financial-system/kfs/trunk/work/src/edu/arizona/kfs/module/cam/KFSKeyConstants.java	(revision 11920)
++++ financial-system/kfs/trunk/work/src/edu/arizona/kfs/module/cam/KFSKeyConstants.java	(revision 11921)
+@@ -27,5 +27,8 @@
+     public static final String ERROR_DATE_NOT_EXIST = "error.document.assetAwardHistory.existence.date";
+     public static final String ERROR_GRANT_NUMBER_NOT_EXIST = "error.document.assetAwardHistory.existence.grantNumber";
+     
+-
++    //Asset Inventory Unit Errors (Found in arizona-applicationResources.properties)
++    public static final String ERROR_INVENTORY_UNIT_CODE_NOT_EXIST = "error.document.assetInventoryUnits.existence.inventoryUnitCode";
++    public static final String ERROR_INVENTORY_COA_NOT_MATCH_ORG_OWNER_COA = "error.document.assetInventoryUnits.matching.chartOfAccountsCode";
++    public static final String ERROR_INVENTORY_COA_NOT_MATCH_ORG_OWNER_CODE = "error.document.assetInventoryUnits.matching.organizationCode";
+ }
+Index: financial-system/kfs/trunk/work/src/edu/arizona/kfs/module/cam/document/datadictionary/AssetMaintenanceDocument.xml
+===================================================================
+--- financial-system/kfs/trunk/work/src/edu/arizona/kfs/module/cam/document/datadictionary/AssetMaintenanceDocument.xml	(revision 11920)
++++ financial-system/kfs/trunk/work/src/edu/arizona/kfs/module/cam/document/datadictionary/AssetMaintenanceDocument.xml	(revision 11921)
+@@ -1,83 +1,103 @@
+ <?xml version="1.0" encoding="UTF-8"?>
+ <beans xmlns="http://www.springframework.org/schema/beans"
+-	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:p="http://www.springframework.org/schema/p"
+-	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-2.0.xsd">
++ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:p="http://www.springframework.org/schema/p"
++ xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-2.0.xsd">
+ 
+ 
+-	<bean id="AssetMaintenanceDocument" parent="AssetMaintenanceDocument-parentBean">
+-		<property name="maintainableSections">
+-			<list merge="true">
++ <bean id="AssetMaintenanceDocument" parent="AssetMaintenanceDocument-parentBean">
++  <property name="maintainableSections">
++   <list merge="true">
+ 
+-				<ref bean="AssetMaintenanceDocument-AwardHistory" />
++    <ref bean="AssetMaintenanceDocument-AwardHistory" />
+ 
+-			</list>
+-		</property>
+-		
+-		
+-		<!--This gave errors and did not work.  James Smith said it may be a bug 
+-		
+-		<property name="defaultExistenceChecks">
+-      <list merge = "true">
+-       <bean parent="ReferenceDefinition" p:attributeName="coaCodeObj" p:collection="extension.assetAwardHistory" p:attributeToHighlightOnFail="extension.AssetAwardHistory.chartOfAccountsCode"/>
+-       <bean parent="ReferenceDefinition" p:attributeName="accountObj" p:collection="extension.assetAwardHistory" p:attributeToHighlightOnFail="organizationOwnerAccountNumber"/>
++   </list>
++  </property>
+ 
++  <property name="businessRulesClass"
++   value="edu.arizona.kfs.module.cam.document.validation.impl.AssetAwardHistoryRule" />
++ </bean>
++
++ <!-- Maintenance Section Definitions -->
++
++ <bean id="AssetMaintenanceDocument-OrganizationInformation"
++  parent="AssetMaintenanceDocument-OrganizationInformation-parentBean" />
++ <bean id="AssetMaintenanceDocument-OrganizationInformation-parentBean"
++  abstract="true" parent="MaintainableSectionDefinition">
++  <property name="id" value="Organization Information" />
++  <property name="title" value="Organization Information" />
++  <property name="defaultOpen" value="false" />
++  <property name="maintainableItems">
++   <list>
++    
++    <bean parent="MaintainableFieldDefinition" p:name="organizationInventoryName"/>
++    <bean parent="MaintainableFieldDefinition" p:name="representativeUniversalIdentifier"/>
++    <bean parent="MaintainableFieldDefinition" p:name="assetRepresentative.principalName"/>
++    <bean parent="MaintainableFieldDefinition" p:name="assetRepresentative.name"/>
++    <bean parent="MaintainableFieldDefinition" p:name="assetOrganization.organizationText"/>
++    <bean parent="MaintainableFieldDefinition" p:name="assetOrganization.organizationTagNumber"/>
++    <bean parent="MaintainableFieldDefinition" p:name="assetOrganization.organizationAssetTypeIdentifier" p:noLookup="true"/>
++    <bean parent="MaintainableFieldDefinition" p:name="receiveDate"/>
++    <bean parent="MaintainableFieldDefinition" p:name="replacementAmount"/>
++    <bean parent="MaintainableFieldDefinition" p:name="estimatedSellingPrice"/>
++    
++    <bean parent="MaintainableFieldDefinition" p:name="extension.inventoryUnitCode" p:required="true" />
++    <bean parent="MaintainableFieldDefinition" p:name="extension.inventoryUnitChartOfAccountsCode" p:required="true" />
++    <bean parent="MaintainableFieldDefinition" p:name="extension.inventoryUnitOrganizationCode" p:required="true" />
++
++   </list>
++  </property>
++ </bean>
++
++ <bean id="AssetMaintenanceDocument-AwardHistory" parent="AssetMaintenanceDocument-AwardHistory-parentBean" />
++ <bean id="AssetMaintenanceDocument-AwardHistory-parentBean"
++  abstract="true" parent="MaintainableSectionDefinition">
++  <property name="defaultOpen" value="false" />
++  <property name="id" value="awardHistory" />
++  <property name="title" value="Asset Award History" />
++  <property name="maintainableItems">
++   <list>
++    <bean parent="MaintainableCollectionDefinition">
++     <property name="name" value="extension.assetAwardHistory" />
++     <property name="businessObjectClass"
++      value="edu.arizona.kfs.module.cam.businessobject.AssetAwardHistory" />
++
++     <property name="summaryFields">
++      <list>
++       <bean parent="MaintainableFieldDefinition" p:name="chartOfAccountsCode" />
++       <bean parent="MaintainableFieldDefinition" p:name="accountNumber" />
++       <bean parent="MaintainableFieldDefinition" p:name="agencyNumber" />
++
+       </list>
+-    </property>
+-			
+-  -->
+-	<property name="businessRulesClass"
+-			value="edu.arizona.kfs.module.cam.document.validation.impl.AssetAwardHistoryRule" />
+-	</bean>
++     </property>
+ 
+-	<bean id="AssetMaintenanceDocument-AwardHistory" parent="AssetMaintenanceDocument-AwardHistory-parentBean" />
+-	<bean id="AssetMaintenanceDocument-AwardHistory-parentBean"
+-		abstract="true" parent="MaintainableSectionDefinition">
+-		<property name="defaultOpen" value="false" />
+-		<property name="id" value="awardHistory" />
+-		<property name="title" value="Asset Award History" />
+-		<property name="maintainableItems">
+-			<list>
+-				<bean parent="MaintainableCollectionDefinition">
+-					<property name="name" value="extension.assetAwardHistory" />
+-					<property name="businessObjectClass"
+-						value="edu.arizona.kfs.module.cam.businessobject.AssetAwardHistory" />
+-						
+-						<property name="summaryFields">
+-            <list>
+-              <bean parent="MaintainableFieldDefinition" p:name="chartOfAccountsCode"/>
+-              <bean parent="MaintainableFieldDefinition" p:name="accountNumber"/>
+-              <bean parent="MaintainableFieldDefinition" p:name="agencyNumber"/>
+-              
+-            </list>
+-          </property>
+-						
+-					<property name="maintainableFields">
+-						<list>
+-							<bean parent="MaintainableFieldDefinition" p:name="chartOfAccountsCode"
+-								p:required="false" p:readOnlyAfterAdd="false" />
+-							<bean parent="MaintainableFieldDefinition" p:name="accountNumber"
+-								p:required="true" p:readOnlyAfterAdd="false" />
+-							<bean parent="MaintainableFieldDefinition" p:name="effectiveDate"
+-								p:required="true" p:readOnlyAfterAdd="false" />
+-							<bean parent="MaintainableFieldDefinition" p:name="agencyNumber"
+-								p:required="true" p:readOnlyAfterAdd="false" />
+-							<bean parent="MaintainableFieldDefinition" p:name="grantNumber"
+-								p:required="true" p:readOnlyAfterAdd="false" />
+-							<bean parent="MaintainableFieldDefinition" p:name="newCollectionRecord" />
+-						</list>
+-					</property>
+-				</bean>
+-			</list>
+-		</property>
+-	</bean>
++     <property name="maintainableFields">
++      <list>
++       <bean parent="MaintainableFieldDefinition" p:name="chartOfAccountsCode"
++        p:required="false" p:readOnlyAfterAdd="false" />
++       <bean parent="MaintainableFieldDefinition" p:name="accountNumber"
++        p:required="true" p:readOnlyAfterAdd="false" />
++       <bean parent="MaintainableFieldDefinition" p:name="effectiveDate"
++        p:required="true" p:readOnlyAfterAdd="false" />
++       <bean parent="MaintainableFieldDefinition" p:name="agencyNumber"
++        p:required="true" p:readOnlyAfterAdd="false" />
++       <bean parent="MaintainableFieldDefinition" p:name="grantNumber"
++        p:required="true" p:readOnlyAfterAdd="false" />
++       <bean parent="MaintainableFieldDefinition" p:name="newCollectionRecord" />
++      </list>
++     </property>
++    </bean>
++   </list>
++  </property>
++ </bean>
+ 
+-  <!--  KITT-683 - adding Account route node to document -->
+-  <bean id="AssetMaintenanceDocument-workflowAttributes" parent="AssetMaintenanceDocument-workflowAttributes-parentBean">
+-    	<property name="routingTypeDefinitions">
+-    		<map merge="true">
+-				<entry key="Account" value-ref="RoutingType-CapitalAssetManagementComplexMaintenanceDocument-Account" />
+-    		</map>
+-    	</property>
+-  </bean>
+-	
++ <!--  KITT-683 - adding Account route node to document -->
++ <bean id="AssetMaintenanceDocument-workflowAttributes" parent="AssetMaintenanceDocument-workflowAttributes-parentBean">
++  <property name="routingTypeDefinitions">
++   <map merge="true">
++    <entry key="Account"
++     value-ref="RoutingType-CapitalAssetManagementComplexMaintenanceDocument-Account" />
++   </map>
++  </property>
++ </bean>
++
+ </beans>
+Index: financial-system/kfs/trunk/work/src/edu/arizona/kfs/module/cam/document/datadictionary/AssetGlobalMaintenanceDocument.xml
+===================================================================
+--- financial-system/kfs/trunk/work/src/edu/arizona/kfs/module/cam/document/datadictionary/AssetGlobalMaintenanceDocument.xml	(revision 0)
++++ financial-system/kfs/trunk/work/src/edu/arizona/kfs/module/cam/document/datadictionary/AssetGlobalMaintenanceDocument.xml	(revision 11921)
+@@ -0,0 +1,149 @@
++<?xml version="1.0" encoding="UTF-8"?>
++<beans xmlns="http://www.springframework.org/schema/beans"
++ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:p="http://www.springframework.org/schema/p"
++ xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-2.0.xsd">
++
++
++ <bean id="AssetGlobalMaintenanceDocument" parent="AssetGlobalMaintenanceDocument-parentBean">
++
++  <property name="businessRulesClass"
++   value="edu.arizona.kfs.module.cam.document.validation.impl.AssetGlobalRule" />
++ </bean>
++
++ <!-- Maintenance Section Definitions -->
++
++ <bean id="AssetGlobalMaintenanceDocument-CampusLocation"
++  parent="AssetGlobalMaintenanceDocument-CampusLocation-parentBean" />
++ <bean id="AssetGlobalMaintenanceDocument-CampusLocation-parentBean"
++  abstract="true" parent="MaintainableSectionDefinition">
++  <property name="id" value="Location Information" />
++  <property name="title" value="Location" />
++  <property name="maintainableItems">
++   <list>
++    <bean parent="MaintainableCollectionDefinition">
++     <property name="name" value="assetSharedDetails" />
++     <property name="businessObjectClass"
++      value="org.kuali.kfs.module.cam.businessobject.AssetGlobalDetail" />
++     <property name="summaryTitle" value="Asset Location" />
++     <property name="summaryFields">
++      <list>
++       <bean parent="MaintainableFieldDefinition" p:name="campusCode"
++        p:required="true" />
++       <bean parent="MaintainableFieldDefinition" p:name="buildingCode"
++        p:required="false" />
++       <bean parent="MaintainableFieldDefinition" p:name="buildingRoomNumber"
++        p:required="false" />
++       <bean parent="MaintainableFieldDefinition" p:name="buildingSubRoomNumber"
++        p:required="false" />
++       <bean parent="MaintainableFieldDefinition" p:name="offCampusName"
++        p:required="false" />
++       <bean parent="MaintainableFieldDefinition" p:name="offCampusAddress"
++        p:required="false" />
++       <bean parent="MaintainableFieldDefinition" p:name="offCampusCityName"
++        p:required="false" />
++       <bean parent="MaintainableFieldDefinition" p:name="offCampusStateCode"
++        p:required="false" />
++       <bean parent="MaintainableFieldDefinition" p:name="offCampusZipCode"
++        p:required="false" />
++       <bean parent="MaintainableFieldDefinition" p:name="offCampusCountryCode" />
++      </list>
++     </property>
++     <property name="maintainableFields">
++      <list>
++       <bean parent="MaintainableFieldDefinition" p:name="campusCode"
++        p:readOnlyAfterAdd="false" p:required="true" />
++       <bean parent="MaintainableFieldDefinition" p:name="buildingCode"
++        p:readOnlyAfterAdd="false" p:required="false" />
++       <bean parent="MaintainableFieldDefinition" p:name="buildingRoomNumber"
++        p:readOnlyAfterAdd="false" p:required="false" />
++       <bean parent="MaintainableFieldDefinition" p:name="buildingSubRoomNumber"
++        p:readOnlyAfterAdd="false" p:required="false" />
++       <bean parent="MaintainableFieldDefinition" p:name="offCampusName"
++        p:readOnlyAfterAdd="false" p:required="false" />
++       <bean parent="MaintainableFieldDefinition" p:name="offCampusAddress"
++        p:readOnlyAfterAdd="false" p:required="false" />
++       <bean parent="MaintainableFieldDefinition" p:name="offCampusCityName"
++        p:readOnlyAfterAdd="false" p:required="false" />
++       <bean parent="MaintainableFieldDefinition" p:name="offCampusStateCode"
++        p:readOnlyAfterAdd="false" p:required="false" />
++       <bean parent="MaintainableFieldDefinition" p:name="offCampusZipCode"
++        p:readOnlyAfterAdd="false" p:required="false" />
++       <bean parent="MaintainableFieldDefinition" p:name="offCampusCountryCode"
++        p:readOnlyAfterAdd="false" />
++       <bean parent="MaintainableFieldDefinition" p:name="locationQuantity"
++        p:readOnlyAfterAdd="true" p:required="true" />
++       <bean parent="MaintainableFieldDefinition" p:name="newCollectionRecord" />
++      </list>
++     </property>
++     <property name="maintainableCollections">
++      <list>
++       <bean parent="MaintainableCollectionDefinition">
++        <property name="name" value="assetGlobalUniqueDetails" />
++        <property name="businessObjectClass"
++         value="org.kuali.kfs.module.cam.businessobject.AssetGlobalDetail" />
++        <property name="summaryTitle" value="Asset Unique Information" />
++        <property name="summaryFields">
++         <list>
++          <bean parent="MaintainableFieldDefinition" p:name="capitalAssetNumber" />
++         </list>
++        </property>
++        <property name="maintainableFields">
++         <list>
++          <bean parent="MaintainableFieldDefinition" p:name="capitalAssetNumber"
++           p:unconditionallyReadOnly="true" />
++          <bean parent="MaintainableFieldDefinition" p:name="serialNumber"
++           p:readOnlyAfterAdd="false" />
++          <bean parent="MaintainableFieldDefinition" p:name="organizationInventoryName"
++           p:readOnlyAfterAdd="false" />
++          <bean parent="MaintainableFieldDefinition" p:name="organizationAssetTypeIdentifier"
++           p:readOnlyAfterAdd="false" />
++          <bean parent="MaintainableFieldDefinition" p:name="governmentTagNumber"
++           p:readOnlyAfterAdd="false" />
++          <bean parent="MaintainableFieldDefinition" p:name="campusTagNumber"
++           p:required="true" p:readOnlyAfterAdd="false" />
++          <bean parent="MaintainableFieldDefinition" p:name="nationalStockNumber"
++           p:readOnlyAfterAdd="false" />
++ 
++           <bean parent="MaintainableFieldDefinition" p:name="extension.inventoryUnitCode"
++           p:required="true" p:readOnlyAfterAdd="false" />
++           <bean parent="MaintainableFieldDefinition" p:name="extension.inventoryUnitChartOfAccountsCode"
++           p:required="true" p:readOnlyAfterAdd="false" />
++           <bean parent="MaintainableFieldDefinition" p:name="extension.inventoryUnitOrganizationCode"
++           p:required="true" p:readOnlyAfterAdd="false" />
++           
++          <bean parent="MaintainableFieldDefinition" p:name="newCollectionRecord"
++           p:defaultValue="true" />
++          <!-- Asset Separate - START -->
++          <bean parent="MaintainableFieldDefinition" p:name="representativeUniversalIdentifier"
++           p:readOnlyAfterAdd="false" />
++          <bean parent="MaintainableFieldDefinition" p:name="assetRepresentative.principalName" />
++          <bean parent="MaintainableFieldDefinition" p:name="assetRepresentative.name"
++           p:unconditionallyReadOnly="true" />
++          <bean parent="MaintainableFieldDefinition" p:name="capitalAssetTypeCode"
++           p:readOnlyAfterAdd="false" />
++          <bean parent="MaintainableFieldDefinition" p:name="capitalAssetDescription"
++           p:readOnlyAfterAdd="false" />
++          <bean parent="MaintainableFieldDefinition" p:name="manufacturerName"
++           p:readOnlyAfterAdd="false" />
++          <bean parent="MaintainableFieldDefinition" p:name="organizationText"
++           p:readOnlyAfterAdd="false" />
++          <bean parent="MaintainableFieldDefinition" p:name="manufacturerModelNumber"
++           p:readOnlyAfterAdd="false" />
++          <bean parent="MaintainableFieldDefinition" p:name="separateSourceAmount"
++           p:defaultValue="0.00" p:readOnlyAfterAdd="false" />
++          <!-- Asset Separate - END -->
++         </list>
++        </property>
++       </bean>
++      </list>
++     </property>
++    </bean>
++   </list>
++  </property>
++ </bean>
++
++
++
++
++</beans>
++
+Index: financial-system/kfs/trunk/work/src/edu/arizona/kfs/module/cam/document/datadictionary/AssetInventoryUnitMaintenanceDocument.xml
+===================================================================
+--- financial-system/kfs/trunk/work/src/edu/arizona/kfs/module/cam/document/datadictionary/AssetInventoryUnitMaintenanceDocument.xml	(revision 0)
++++ financial-system/kfs/trunk/work/src/edu/arizona/kfs/module/cam/document/datadictionary/AssetInventoryUnitMaintenanceDocument.xml	(revision 11921)
+@@ -0,0 +1,57 @@
++<beans xmlns="http://www.springframework.org/schema/beans"
++    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
++    xmlns:p="http://www.springframework.org/schema/p"
++    xmlns:dd="http://rice.kuali.org/dd"
++    xsi:schemaLocation="http://www.springframework.org/schema/beans
++        http://www.springframework.org/schema/beans/spring-beans-2.0.xsd
++        http://rice.kuali.org/dd
++        http://rice.kuali.org/dd/dd.xsd">
++
++  <bean id="AssetInventoryUnitMaintenanceDocument" parent="AssetInventoryUnitMaintenanceDocument-parentBean" />
++
++  <bean id="AssetInventoryUnitMaintenanceDocument-parentBean" abstract="true" parent="MaintenanceDocumentEntry">
++    <property name="businessObjectClass" value="edu.arizona.kfs.module.cam.businessobject.AssetInventoryUnit" />
++    <property name="maintainableClass" value="org.kuali.rice.kns.maintenance.KualiMaintainableImpl" />
++    <property name="maintainableSections" >
++      <list>
++        <ref bean="AssetInventoryUnitMaintenance-EditAssetInventoryUnit" />
++      </list>
++    </property>
++    <property name="allowsNewOrCopy" value="true" />
++    <property name="documentTypeName" value="AIUM" />
++    <property name="documentAuthorizerClass" value="org.kuali.kfs.sys.document.authorization.FinancialSystemMaintenanceDocumentAuthorizerBase" />
++    <property name="workflowAttributes">
++     <ref bean="BalanceTypeMaintenanceDocument-workflowAttributes" />
++    </property>
++  </bean>
++<!-- Maintenance Section Definitions -->
++
++
++  <bean id="AssetInventoryUnitMaintenance-EditAssetInventoryUnit" parent="AssetInventoryUnitMaintenance-EditAssetInventoryUnit-parentBean" />
++
++  <bean id="AssetInventoryUnitMaintenance-EditAssetInventoryUnit-parentBean" abstract="true" parent="MaintainableSectionDefinition">
++    <property name="id" value="Edit Inventory Unit" />
++    <property name="title" value="Edit Inventory Unit" />
++    <property name="maintainableItems" >
++      <list>
++        <bean parent="MaintainableFieldDefinition"
++              p:name="inventoryUnitCode"  p:required="true"/>
++        <bean parent="MaintainableFieldDefinition"
++              p:name="inventoryUnitName" p:required="true"/>
++        <bean parent="MaintainableFieldDefinition"
++              p:name="chartOfAccountsCode"  p:required="true"/>
++        <bean parent="MaintainableFieldDefinition"
++              p:name="organizationCode"  p:required="true"/>
++        <bean parent="MaintainableFieldDefinition" 
++           p:defaultValue="Y"
++              p:name="active" />
++      </list>
++    </property>
++  </bean>
++
++<!-- Exported Workflow Properties -->
++
++  <bean id="AssetInventoryUnitMaintenance-workflowAttributes" parent="AssetInventoryUnitMaintenance-workflowAttributes-parentBean" />
++  <bean id="AssetInventoryUnitMaintenance-workflowAttributes-parentBean"  class="org.kuali.rice.kns.datadictionary.WorkflowAttributes" abstract="true">
++  </bean>
++</beans>
+Index: financial-system/kfs/trunk/work/src/edu/arizona/kfs/module/cam/document/validation/impl/AssetAwardHistoryRule.java
+===================================================================
+--- financial-system/kfs/trunk/work/src/edu/arizona/kfs/module/cam/document/validation/impl/AssetAwardHistoryRule.java	(revision 11920)
++++ financial-system/kfs/trunk/work/src/edu/arizona/kfs/module/cam/document/validation/impl/AssetAwardHistoryRule.java	(revision 11921)
+@@ -16,6 +16,7 @@
+ package edu.arizona.kfs.module.cam.document.validation.impl;
+ 
+ 
++import java.util.ArrayList;
+ import java.util.Collection;
+ import java.util.Date;
+ import java.util.HashMap;
+@@ -24,6 +25,7 @@
+ import java.util.Map;
+ import java.util.Set;
+ 
++import org.apache.commons.lang.StringUtils;
+ import org.kuali.kfs.coa.businessobject.Account;
+ import org.kuali.kfs.module.cam.CamsConstants;
+ import org.kuali.kfs.module.cam.CamsKeyConstants;
+@@ -39,11 +41,14 @@
+ import org.kuali.rice.kns.document.MaintenanceDocument;
+ import org.kuali.rice.kns.service.BusinessObjectService;
+ import org.kuali.rice.kns.service.DataDictionaryService;
++import org.kuali.rice.kns.util.ObjectUtils;
+ 
+ import edu.arizona.kfs.module.cam.AzCamsConstants;
+ import edu.arizona.kfs.module.cam.KFSKeyConstants;
+ import edu.arizona.kfs.module.cam.businessobject.AssetAwardHistory;
+ import edu.arizona.kfs.module.cam.businessobject.AssetExtension;
++import edu.arizona.kfs.module.cam.businessobject.AssetInventoryUnit;
++import edu.arizona.kfs.module.purap.businessobject.PurchasingPdfLanguage;
+ 
+ 
+ public class AssetAwardHistoryRule extends AssetRule {
+@@ -51,9 +56,7 @@
+     protected static org.apache.log4j.Logger LOG = org.apache.log4j.Logger.getLogger(AssetAwardHistoryRule.class);
+     private Asset oldAsset;
+     private Asset newAsset;
+-    private DataDictionaryService dds;
+ 
+-
+     /**
+      * This method sets the convenience objects like newAccount and oldAccount, so you have short and easy handles to the new and
+      * old objects contained in the maintenance document. It also calls the BusinessObjectBase.refresh(), which will attempt to load
+@@ -80,27 +83,17 @@
+         boolean success = true;
+ 
+         if (collectionName.equals(AzCamsConstants.Asset.COLLECTION_ID_ASSET_AWARD_HISTORY)) {
+-            //boolean chartsValid = true;
++            // boolean chartsValid = true;
+             boolean agencyValid = true;
+-            
+-
+             AssetAwardHistory assetAwardHistory = (AssetAwardHistory) bo;
+-
+-            //chartsValid &= isValid(Account.class, "chartOfAccountsCode", assetAwardHistory.getChartOfAccountsCode());
+             agencyValid &= isValid(Agency.class, "agencyNumber", assetAwardHistory.getAgencyNumber());
+ 
+-/*            if (!chartsValid) {
+-                putFieldError("extension.assetAwardHistory", KFSKeyConstants.ERROR_CHART_NOT_EXIST, assetAwardHistory.getChartOfAccountsCode());
+-                success = false;
+-                LOG.debug("locExists: " + success);
+-            }*/
+-            
+-            if(assetAwardHistory.getAccountNumber() == null){
++            if (assetAwardHistory.getAccountNumber() == null) {
+                 putFieldError("extension.assetAwardHistory", KFSKeyConstants.ERROR_ACCOUNT_NOT_EXIST, assetAwardHistory.getAccountNumber());
+                 success = false;
+                 LOG.debug("locExists: " + success);
+             }
+-            if(assetAwardHistory.getEffectiveDate() == null ){
++            if (assetAwardHistory.getEffectiveDate() == null) {
+                 putFieldError("extension.assetAwardHistory", KFSKeyConstants.ERROR_DATE_NOT_EXIST, "null");
+                 success = false;
+                 LOG.debug("locExists: " + success);
+@@ -110,12 +103,12 @@
+                 success = false;
+                 LOG.debug("locExists: " + success);
+             }
+-            if(assetAwardHistory.getGrantNumber() == null ){
++            if (assetAwardHistory.getGrantNumber() == null) {
+                 putFieldError("extension.assetAwardHistory", KFSKeyConstants.ERROR_GRANT_NUMBER_NOT_EXIST, assetAwardHistory.getGrantNumber());
+                 success = false;
+                 LOG.debug("locExists: " + success);
+             }
+-    
++
+         }
+         return success & super.processCustomAddCollectionLineBusinessRules(documentCopy, collectionName, bo);
+     }
+@@ -138,26 +131,55 @@
+ 
+         // Comparing Account number on the asset screen with an account number in the account BO
+         List<AssetAwardHistory> accounts = ((AssetExtension) newAsset.getExtension()).getAssetAwardHistory();
+-        //boolean chartsValid = true;
++        // boolean chartsValid = true;
+         boolean agencyValid = true;
+         for (AssetAwardHistory history : accounts) {
+ 
+-            //chartsValid &= isValid(Account.class, "chartOfAccountsCode", history.getChartOfAccountsCode());
+             agencyValid &= isValid(Agency.class, "agencyNumber", history.getAgencyNumber());
+ 
+-/*            if (!chartsValid) {
+-                putFieldError("extension.assetAwardHistory", KFSKeyConstants.ERROR_CHART_NOT_EXIST, history.getChartOfAccountsCode());
+-                locExists = false;
+-                LOG.debug("locExists: " + locExists);
+-            }*/
+-
+             if (!agencyValid) {
+                 putFieldError("extension.assetAwardHistory", KFSKeyConstants.ERROR_AGENCY_NOT_EXIST, history.getAgencyNumber());
+                 locExists = false;
+                 LOG.debug("locExists: " + locExists);
+             }
++        }
+ 
++        AssetInventoryUnit invUnit = ((AssetExtension) newAsset.getExtension()).getAssetInvUnitObj();
++
++
++        if (ObjectUtils.isNull(invUnit)) {
++            throw new RuntimeException("There is no extension for this asset because the asset was created bofore the Inventory Unit was created so it is throwing a null pointer exception when it tries to validate an extension that does not exist.");
++
+         }
++        System.out.println("Checking invunit bo " + invUnit.getInventoryUnitCode());
++        BusinessObjectService bos = SpringContext.getBean(BusinessObjectService.class);
++        List<String> valueList = new ArrayList<String>();
++        Map<String, String> fieldValues = new HashMap<String, String>();
++        fieldValues.put("inventoryUnitCode", invUnit.getInventoryUnitCode());
++        fieldValues.put("chartOfAccountsCode", invUnit.getChartOfAccountsCode());
++        fieldValues.put("organizationCode", invUnit.getOrganizationCode());
++        fieldValues.put("active", "Y");
++        Collection<AssetInventoryUnit> col = bos.findMatching(AssetInventoryUnit.class, fieldValues);
++
++        if (col.size() < 1) {
++            putFieldError("inventoryUnitCode", KFSKeyConstants.ERROR_INVENTORY_UNIT_CODE_NOT_EXIST, invUnit.getInventoryUnitCode());
++            locExists = false;
++            LOG.debug("locExists: " + locExists);
++        }
++
++        if (!newAsset.getOrganizationOwnerAccount().getChartOfAccountsCode().equalsIgnoreCase(invUnit.getChartOfAccountsCode())) {
++            putFieldError("chartOfAccountsCode", KFSKeyConstants.ERROR_INVENTORY_COA_NOT_MATCH_ORG_OWNER_COA, invUnit.getChartOfAccountsCode());
++            locExists = false;
++            LOG.debug("locExists: " + locExists);
++        }
++
++        if (!newAsset.getOrganizationOwnerAccount().getOrganizationCode().equalsIgnoreCase(invUnit.getOrganizationCode())) {
++            putFieldError("organizationCode", KFSKeyConstants.ERROR_INVENTORY_COA_NOT_MATCH_ORG_OWNER_CODE, invUnit.getOrganizationCode());
++            locExists = false;
++            LOG.debug("locExists: " + locExists);
++        }
++
++
+         return locExists;
+     }
+ 
+Index: financial-system/kfs/trunk/work/src/edu/arizona/kfs/module/cam/document/validation/impl/AssetGlobalRule.java
+===================================================================
+--- financial-system/kfs/trunk/work/src/edu/arizona/kfs/module/cam/document/validation/impl/AssetGlobalRule.java	(revision 0)
++++ financial-system/kfs/trunk/work/src/edu/arizona/kfs/module/cam/document/validation/impl/AssetGlobalRule.java	(revision 11921)
+@@ -0,0 +1,109 @@
++/*
++ * Copyright 2010 The Kuali Foundation.
++ * 
++ * Licensed under the Educational Community License, Version 1.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy of the License at
++ * 
++ * http://www.opensource.org/licenses/ecl1.php
++ * 
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++package edu.arizona.kfs.module.cam.document.validation.impl;
++
++import java.util.ArrayList;
++import java.util.Collection;
++import java.util.HashMap;
++import java.util.List;
++import java.util.Map;
++
++import org.apache.commons.lang.StringUtils;
++import org.kuali.kfs.module.cam.CamsKeyConstants;
++import org.kuali.kfs.module.cam.CamsPropertyConstants;
++import org.kuali.kfs.module.cam.businessobject.AssetGlobal;
++import org.kuali.kfs.module.cam.businessobject.AssetGlobalDetail;
++import org.kuali.kfs.sys.context.SpringContext;
++import org.kuali.rice.kns.document.MaintenanceDocument;
++import org.kuali.rice.kns.service.BusinessObjectService;
++import org.kuali.rice.kns.util.GlobalVariables;
++import org.kuali.rice.kns.util.ObjectUtils;
++
++import edu.arizona.kfs.module.cam.KFSKeyConstants;
++import edu.arizona.kfs.module.cam.businessobject.AssetExtension;
++import edu.arizona.kfs.module.cam.businessobject.AssetGlobalDetailExtension;
++import edu.arizona.kfs.module.cam.businessobject.AssetInventoryUnit;
++
++public class AssetGlobalRule extends org.kuali.kfs.module.cam.document.validation.impl.AssetGlobalRule {
++
++    @Override
++    protected boolean processCustomSaveDocumentBusinessRules(MaintenanceDocument document) {
++
++        boolean success = true;
++        success &= super.processCustomSaveDocumentBusinessRules(document);
++
++        AssetGlobal assetGlobal = (AssetGlobal) document.getNewMaintainableObject().getBusinessObject();
++
++        // shared is location details on the screen
++        List<AssetGlobalDetail> assetSharedDetails = assetGlobal.getAssetSharedDetails();
++        int sharedIndex = 0;
++        int uniqueIndex = 0;
++
++        if (!assetSharedDetails.isEmpty() && !assetSharedDetails.get(0).getAssetGlobalUniqueDetails().isEmpty()) {
++            // loop through all locations (SharedDetails)of an asset
++            for (AssetGlobalDetail locationDetail : assetSharedDetails) {
++                List<AssetGlobalDetail> assetGlobalUniqueDetails = locationDetail.getAssetGlobalUniqueDetails();
++                //loop through all unique details
++                for (AssetGlobalDetail unique : assetGlobalUniqueDetails) {
++                    // Check to see if there is an asset inventory unit with the 3 values entered
++                    AssetGlobalDetailExtension assetGlobalDetailExtension = (AssetGlobalDetailExtension) unique.getExtension();
++                    assetGlobalDetailExtension.refreshReferenceObject("assetInvUnitObj");
++                    AssetInventoryUnit invUnit = assetGlobalDetailExtension.getAssetInvUnitObj();
++                    
++                    String errorPath = MAINTAINABLE_ERROR_PREFIX + CamsPropertyConstants.AssetGlobal.ASSET_SHARED_DETAILS + "[" + sharedIndex + "]." + CamsPropertyConstants.AssetGlobalDetail.ASSET_UNIQUE_DETAILS + "[" + uniqueIndex + "]";
++                    GlobalVariables.getMessageMap().addToErrorPath(errorPath);
++
++                    if(ObjectUtils.isNull(invUnit)){
++                        GlobalVariables.getMessageMap().putError("extension.inventoryUnitCode", KFSKeyConstants.ERROR_INVENTORY_UNIT_CODE_NOT_EXIST, "AssetInventoryUnit Null");
++                        success = false; 
++                    }else{
++                    
++                    BusinessObjectService bos = SpringContext.getBean(BusinessObjectService.class);
++                    List<String> valueList = new ArrayList<String>();
++                    Map<String, String> fieldValues = new HashMap<String, String>();
++                    fieldValues.put("inventoryUnitCode", invUnit.getInventoryUnitCode());
++                    fieldValues.put("chartOfAccountsCode", invUnit.getChartOfAccountsCode());
++                    fieldValues.put("organizationCode", invUnit.getOrganizationCode());
++                    fieldValues.put("active", "Y");
++                    Collection<AssetInventoryUnit> col = bos.findMatching(AssetInventoryUnit.class, fieldValues);
++
++                    // check for null
++                    if (col.size() < 1) {
++                        GlobalVariables.getMessageMap().putError("extension.inventoryUnitCode", KFSKeyConstants.ERROR_INVENTORY_UNIT_CODE_NOT_EXIST, invUnit.getInventoryUnitCode());
++                        success = false;
++                    }
++
++                    // check to see if the COA Code on the assetGlobal account matches the one entered on the screen.
++                    if (!assetGlobal.getOrganizationOwnerAccount().getChartOfAccountsCode().equalsIgnoreCase(invUnit.getChartOfAccountsCode())) {
++                        GlobalVariables.getMessageMap().putError("extension.inventoryUnitChartOfAccountsCode", KFSKeyConstants.ERROR_INVENTORY_COA_NOT_MATCH_ORG_OWNER_COA, invUnit.getChartOfAccountsCode());
++                        success = false;
++                    }
++
++                    // check to see if the Org Code on the assetGlobal account matches the one entered on the screen.
++                    if (!assetGlobal.getOrganizationOwnerAccount().getOrganizationCode().equalsIgnoreCase(invUnit.getOrganizationCode())) {
++                        GlobalVariables.getMessageMap().putError("extension.inventoryUnitOrganizationCode", KFSKeyConstants.ERROR_INVENTORY_COA_NOT_MATCH_ORG_OWNER_CODE, invUnit.getOrganizationCode());
++                        success = false;
++                    }
++                    }
++                    GlobalVariables.getMessageMap().removeFromErrorPath(errorPath);
++                    uniqueIndex ++;
++                }
++                sharedIndex ++;
++            }
++        }
++        return success;
++    }
++}
+Index: financial-system/kfs/trunk/work/src/edu/arizona/kfs/module/cam/document/workflow/AssetInventoryUnitMaintenanceDocument.xml
+===================================================================
+--- financial-system/kfs/trunk/work/src/edu/arizona/kfs/module/cam/document/workflow/AssetInventoryUnitMaintenanceDocument.xml	(revision 0)
++++ financial-system/kfs/trunk/work/src/edu/arizona/kfs/module/cam/document/workflow/AssetInventoryUnitMaintenanceDocument.xml	(revision 11921)
+@@ -0,0 +1,10 @@
++<?xml version='1.0' encoding='UTF-8'?>
++<data xmlns="ns:workflow" xmlns:fo="http://www.w3.org/1999/XSL/Format" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="ns:workflow resource:WorkflowData">
++  <documentTypes xmlns="ns:workflow/DocumentType" xsi:schemaLocation="ns:workflow/DocumentType resource:DocumentType">
++    <documentType>
++      <name>AIUM</name>
++      <label>Asset Inventory Unit</label>
++      <parent>CMSM</parent>
++    </documentType>
++  </documentTypes>
++</data>
+\ No newline at end of file
+Index: financial-system/kfs/trunk/work/src/edu/arizona/kfs/sys/ojb-sys.xml
+===================================================================
+--- financial-system/kfs/trunk/work/src/edu/arizona/kfs/sys/ojb-sys.xml	(revision 11920)
++++ financial-system/kfs/trunk/work/src/edu/arizona/kfs/sys/ojb-sys.xml	(revision 11921)
+@@ -29,8 +29,6 @@
+      <field-descriptor name="lastUpdate" column="LST_UPDT_TS" jdbc-type="TIMESTAMP"/> 
+ </class-descriptor>
+ 
+-
+-
+ <class-descriptor class="edu.arizona.kfs.sys.businessobject.RouteCode" table="SYS_ROUTECODE_T">
+     <field-descriptor name="routeCode" column="ROUTE_CODE" jdbc-type="VARCHAR" primarykey="true" index="true"  />
+     <field-descriptor name="routeCodeDesc" column="ROUTE_CODE_DESC" jdbc-type="VARCHAR" />
+@@ -39,14 +37,6 @@
+     <field-descriptor name="active" column="ROW_ACTV_IND" jdbc-type="VARCHAR" conversion="org.kuali.rice.kns.util.OjbCharBooleanConversion"/>
+ </class-descriptor>
+ 
+-<class-descriptor class="edu.arizona.kfs.sys.businessobject.RouteCode" table="SYS_ROUTECODE_T">
+-    <field-descriptor name="routeCode" column="ROUTE_CODE" jdbc-type="VARCHAR" primarykey="true" index="true"  />
+-    <field-descriptor name="routeCodeDesc" column="ROUTE_CODE_DESC" jdbc-type="VARCHAR" />
+-    <field-descriptor name="objectId" column="OBJ_ID" jdbc-type="VARCHAR" index="true" />
+-    <field-descriptor name="versionNumber" column="VER_NBR" jdbc-type="BIGINT" locking="true" />
+-    <field-descriptor name="active" column="ROW_ACTV_IND" jdbc-type="VARCHAR" conversion="org.kuali.rice.kns.util.OjbCharBooleanConversion"/>
+-</class-descriptor>
+-
+ <class-descriptor class="org.kuali.kfs.sys.businessobject.Building" table="SH_BUILDING_T">
+     <field-descriptor name="campusCode" column="CAMPUS_CD" jdbc-type="VARCHAR" primarykey="true" index="true" />
+     <field-descriptor name="buildingCode" column="BLDG_CD" jdbc-type="VARCHAR" primarykey="true" index="true" />
+Index: financial-system/kfs/trunk/work/web-root/WEB-INF/tags/portal/channel/maintenance/capitalAsset.tag
+===================================================================
+--- financial-system/kfs/trunk/work/web-root/WEB-INF/tags/portal/channel/maintenance/capitalAsset.tag	(revision 11920)
++++ financial-system/kfs/trunk/work/web-root/WEB-INF/tags/portal/channel/maintenance/capitalAsset.tag	(revision 11921)
+@@ -68,6 +68,13 @@
+ 				title="Asset Type"
+ 				url="kr/lookup.do?methodToCall=start&businessObjectClassName=org.kuali.kfs.module.cam.businessobject.AssetType&docFormKey=88888888&returnLocation=${ConfigProperties.application.url}/portal.do&hideReturnLink=true" />
+ 		</li>
++		<!--KevinMcO Adding link for Asset Inventory Unit BO -->
++		<li>
++			<portal:portalLink displayTitle="true"
++				title="Inventory Unit"
++				url="kr/lookup.do?methodToCall=start&businessObjectClassName=edu.arizona.kfs.module.cam.businessobject.AssetInventoryUnit&docFormKey=88888888&returnLocation=${ConfigProperties.application.url}/portal.do&hideReturnLink=true" />
++		</li>
++		
+ 	</ul>
+ </div>
+ <channel:portalChannelBottom />

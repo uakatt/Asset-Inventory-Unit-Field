@@ -1,0 +1,16 @@
+Index: work/src/arizona-ApplicationResources.properties
+===================================================================
+--- work/src/arizona-ApplicationResources.properties	(revision 11921)
++++ work/src/arizona-ApplicationResources.properties	(revision 11922)
+@@ -12,6 +12,11 @@
+ error.document.assetAwardHistory.existence.date = The effective date {0} is required.
+ error.document.assetAwardHistory.existence.grantNumber = The grant number {0} is required.
+ 
++# AssetInventoryUnit Messages
++error.document.assetInventoryUnits.existence.inventoryUnitCode = No AssetInventoryUnit can be found with the primary keys entered for inventory unit fields.
++error.document.assetInventoryUnits.matching.chartOfAccountsCode = The Organization Owner accounts chart of account does not match the Inventory unit chart of account {0}.
++error.document.assetInventoryUnits.matching.organizationCode = The Organization Owner accounts organization code does not match the Inventory unit organization code {0}.
++
+ # Batch Upload Screen
+ message.batchUpload.title.bankTransactions=Bank TFile Batch Upload
+ message.batchUpload.error.bankTransactions=The File cannot be uploaded as it was already processed before

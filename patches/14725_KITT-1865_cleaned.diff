@@ -1,0 +1,706 @@
+Index: work/src/org/kuali/kfs/module/cam/document/AssetTransferDocument.java
+===================================================================
+--- work/src/org/kuali/kfs/module/cam/document/AssetTransferDocument.java	(revision 14724)
++++ work/src/org/kuali/kfs/module/cam/document/AssetTransferDocument.java	(revision 14725)
+@@ -60,6 +60,8 @@
+ import org.kuali.rice.kns.util.ObjectUtils;
+ import org.kuali.rice.kns.workflow.service.KualiWorkflowDocument;
+ 
++import edu.arizona.kfs.module.cam.businessobject.AssetInventoryUnit;
++
+ public class AssetTransferDocument extends GeneralLedgerPostingDocumentBase implements GeneralLedgerPendingEntrySource {
+     protected static org.apache.log4j.Logger LOG = org.apache.log4j.Logger.getLogger(AssetTransferDocument.class);
+     protected String hiddenFieldForError;
+@@ -98,6 +100,158 @@
+     protected Asset asset;
+     protected PostalCode postalZipCode;
+ 
++    // **START AZ** KITT-1865 KevinMcO
++    private String inventoryUnitCode;
++    private String inventoryUnitOrganizationCode;
++    private String inventoryUnitChartOfAccountsCode;
++    private String oldInventoryUnitCode;
++    private String oldInventoryUnitOrganizationCode;
++    private String oldInventoryUnitChartOfAccountsCode;
++
++    private AssetInventoryUnit assetInvUnitObj;
++
++    // **END AZ** KITT-1865 KevinMcO
++
++    /**
++     * Gets the inventoryUnitCode attribute.
++     * 
++     * @return Returns the inventoryUnitCode.
++     */
++    public String getInventoryUnitCode() {
++        return inventoryUnitCode;
++    }
++
++
++    /**
++     * Gets the oldInventoryUnitCode attribute.
++     * 
++     * @return Returns the oldInventoryUnitCode.
++     */
++    public String getOldInventoryUnitCode() {
++        return oldInventoryUnitCode;
++    }
++
++
++    /**
++     * Sets the oldInventoryUnitCode attribute value.
++     * 
++     * @param oldInventoryUnitCode The oldInventoryUnitCode to set.
++     */
++    public void setOldInventoryUnitCode(String oldInventoryUnitCode) {
++        this.oldInventoryUnitCode = oldInventoryUnitCode;
++    }
++
++
++    /**
++     * Gets the oldInventoryUnitOrganizationCode attribute.
++     * 
++     * @return Returns the oldInventoryUnitOrganizationCode.
++     */
++    public String getOldInventoryUnitOrganizationCode() {
++        return oldInventoryUnitOrganizationCode;
++    }
++
++
++    /**
++     * Sets the oldInventoryUnitOrganizationCode attribute value.
++     * 
++     * @param oldInventoryUnitOrganizationCode The oldInventoryUnitOrganizationCode to set.
++     */
++    public void setOldInventoryUnitOrganizationCode(String oldInventoryUnitOrganizationCode) {
++        this.oldInventoryUnitOrganizationCode = oldInventoryUnitOrganizationCode;
++    }
++
++
++    /**
++     * Gets the oldInventoryUnitChartOfAccountsCode attribute.
++     * 
++     * @return Returns the oldInventoryUnitChartOfAccountsCode.
++     */
++    public String getOldInventoryUnitChartOfAccountsCode() {
++        return oldInventoryUnitChartOfAccountsCode;
++    }
++
++
++    /**
++     * Sets the oldInventoryUnitChartOfAccountsCode attribute value.
++     * 
++     * @param oldInventoryUnitChartOfAccountsCode The oldInventoryUnitChartOfAccountsCode to set.
++     */
++    public void setOldInventoryUnitChartOfAccountsCode(String oldInventoryUnitChartOfAccountsCode) {
++        this.oldInventoryUnitChartOfAccountsCode = oldInventoryUnitChartOfAccountsCode;
++    }
++
++
++    /**
++     * Sets the inventoryUnitCode attribute value.
++     * 
++     * @param inventoryUnitCode The inventoryUnitCode to set.
++     */
++    public void setInventoryUnitCode(String inventoryUnitCode) {
++        this.inventoryUnitCode = inventoryUnitCode;
++    }
++
++
++    /**
++     * Gets the inventoryUnitOrganizationCode attribute.
++     * 
++     * @return Returns the inventoryUnitOrganizationCode.
++     */
++    public String getInventoryUnitOrganizationCode() {
++        return inventoryUnitOrganizationCode;
++    }
++
++
++    /**
++     * Sets the inventoryUnitOrganizationCode attribute value.
++     * 
++     * @param inventoryUnitOrganizationCode The inventoryUnitOrganizationCode to set.
++     */
++    public void setInventoryUnitOrganizationCode(String inventoryUnitOrganizationCode) {
++        this.inventoryUnitOrganizationCode = inventoryUnitOrganizationCode;
++    }
++
++
++    /**
++     * Gets the inventoryUnitChartOfAccountsCode attribute.
++     * 
++     * @return Returns the inventoryUnitChartOfAccountsCode.
++     */
++    public String getInventoryUnitChartOfAccountsCode() {
++        return inventoryUnitChartOfAccountsCode;
++    }
++
++
++    /**
++     * Sets the inventoryUnitChartOfAccountsCode attribute value.
++     * 
++     * @param inventoryUnitChartOfAccountsCode The inventoryUnitChartOfAccountsCode to set.
++     */
++    public void setInventoryUnitChartOfAccountsCode(String inventoryUnitChartOfAccountsCode) {
++        this.inventoryUnitChartOfAccountsCode = inventoryUnitChartOfAccountsCode;
++    }
++
++
++    /**
++     * Gets the assetInvUnitObj attribute.
++     * 
++     * @return Returns the assetInvUnitObj.
++     */
++    public AssetInventoryUnit getAssetInvUnitObj() {
++        return assetInvUnitObj;
++    }
++
++
++    /**
++     * Sets the assetInvUnitObj attribute value.
++     * 
++     * @param assetInvUnitObj The assetInvUnitObj to set.
++     */
++    public void setAssetInvUnitObj(AssetInventoryUnit assetInvUnitObj) {
++        this.assetInvUnitObj = assetInvUnitObj;
++    }
++
++
+     public AssetTransferDocument() {
+         super();
+         this.sourceAssetGlpeSourceDetails = new ArrayList<AssetGlpeSourceDetail>();
+Index: work/src/org/kuali/kfs/module/cam/document/web/struts/AssetTransferAction.java
+===================================================================
+--- work/src/org/kuali/kfs/module/cam/document/web/struts/AssetTransferAction.java	(revision 14724)
++++ work/src/org/kuali/kfs/module/cam/document/web/struts/AssetTransferAction.java	(revision 14725)
+@@ -27,6 +27,7 @@
+ import org.kuali.kfs.module.cam.CamsKeyConstants;
+ import org.kuali.kfs.module.cam.CamsPropertyConstants;
+ import org.kuali.kfs.module.cam.businessobject.Asset;
++import edu.arizona.kfs.module.cam.businessobject.AssetExtension;
+ import org.kuali.kfs.module.cam.businessobject.AssetPayment;
+ import org.kuali.kfs.module.cam.document.AssetTransferDocument;
+ import org.kuali.kfs.module.cam.document.service.AssetLocationService;
+@@ -61,6 +62,7 @@
+         handleRequestFromLookup(request, assetTransferForm, assetTransferDocument);
+         handleRequestFromWorkflow(assetTransferForm, assetTransferDocument);
+         Asset asset = assetTransferDocument.getAsset();
++        AssetExtension extension = (AssetExtension) asset.getExtension();
+         asset.refreshReferenceObject(CamsPropertyConstants.Asset.ASSET_LOCATIONS);
+         asset.refreshReferenceObject(CamsPropertyConstants.Asset.ASSET_PAYMENTS);
+         SpringContext.getBean(AssetLocationService.class).setOffCampusLocation(asset);
+@@ -71,6 +73,11 @@
+         if (KEWConstants.INITIATE_COMMAND.equals(command)) {
+             assetTransferDocument.setOldOrganizationOwnerChartOfAccountsCode(asset.getOrganizationOwnerChartOfAccountsCode());
+             assetTransferDocument.setOldOrganizationOwnerAccountNumber(asset.getOrganizationOwnerAccountNumber());
++            //**START AZ** KITT-1131 KevinMcO
++            assetTransferDocument.setOldInventoryUnitCode(extension.getInventoryUnitCode());
++            assetTransferDocument.setOldInventoryUnitChartOfAccountsCode(extension.getInventoryUnitChartOfAccountsCode());
++            assetTransferDocument.setOldInventoryUnitOrganizationCode(extension.getInventoryUnitOrganizationCode());
++            //**END AZ** KITT-1131 KevinMcO
+         }
+ 
+         this.refresh(mapping, form, request, response);
+Index: work/src/arizona-ApplicationResources.properties
+===================================================================
+--- work/src/arizona-ApplicationResources.properties	(revision 14724)
++++ work/src/arizona-ApplicationResources.properties	(revision 14725)
+@@ -16,6 +16,9 @@
+ error.document.assetInventoryUnits.existence.inventoryUnitCode = No AssetInventoryUnit can be found with the primary keys entered for inventory unit fields.
+ error.document.assetInventoryUnits.matching.chartOfAccountsCode = The Organization Owner accounts chart of account does not match the Inventory unit chart of account {0}.
+ error.document.assetInventoryUnits.matching.organizationCode = The Organization Owner accounts organization code does not match the Inventory unit organization code {0}.
++error.document.assetInventoryUnits.organizationCode.required = The Inventory Unit Organization Code is Required.
++error.document.assetInventoryUnits.coaCode.required = The Inventory Unit Chart Of Account Code is Required.
++error.document.assetInventoryUnits.unitCode.required = The Inventory Unit Code is required.
+ 
+ # Batch Upload Screen
+ message.batchUpload.title.bankTransactions=Bank TFile Batch Upload
+Index: work/src/edu/arizona/kfs/module/cam/businessobject/datadictionary/AssetInventoryUnit.xml
+===================================================================
+--- work/src/edu/arizona/kfs/module/cam/businessobject/datadictionary/AssetInventoryUnit.xml	(revision 14724)
++++ work/src/edu/arizona/kfs/module/cam/businessobject/datadictionary/AssetInventoryUnit.xml	(revision 14725)
+@@ -86,6 +86,7 @@
+   <property name="forceUppercase" value="false" />
+   <property name="shortLabel" value="COA Code" />
+   <property name="maxLength" value="2" />
++  <property name="required" value="true" />
+   <property name="control">
+    <bean parent="SelectControlDefinition"
+     p:valuesFinderClass="org.kuali.kfs.coa.businessobject.options.ChartValuesFinder"
+Index: work/src/edu/arizona/kfs/module/cam/ojb-cam.xml
+===================================================================
+--- work/src/edu/arizona/kfs/module/cam/ojb-cam.xml	(revision 14724)
++++ work/src/edu/arizona/kfs/module/cam/ojb-cam.xml	(revision 14725)
+@@ -3,29 +3,21 @@
+  <class-descriptor
+   class="edu.arizona.kfs.module.cam.businessobject.AssetInventoryUnit"
+   table="CM_CPTLAST_INV_UNIT_T">
+-
+   <field-descriptor name="inventoryUnitCode" column="INV_UNIT_CD"
+    jdbc-type="VARCHAR" primarykey="true" index="true" />
+-
+   <field-descriptor name="chartOfAccountsCode" column="FIN_COA_CD"
+    jdbc-type="VARCHAR" primarykey="true" index="true" />
+-
+   <field-descriptor name="organizationCode" column="ORG_CD"
+    jdbc-type="VARCHAR" primarykey="true" index="true" />
+-
+   <field-descriptor name="objectId" column="OBJ_ID"
+    jdbc-type="VARCHAR" index="true" />
+-
+   <field-descriptor name="versionNumber" column="VER_NBR"
+    jdbc-type="BIGINT" locking="true" />
+-
+   <field-descriptor name="inventoryUnitName" column="INV_UNIT_NM"
+    jdbc-type="VARCHAR" />
+-
+   <field-descriptor name="active" column="ACTV_IND"
+    jdbc-type="VARCHAR" conversion="org.kuali.rice.kns.util.OjbCharBooleanConversion" />
+ 
+-
+   <reference-descriptor name="coaCodeObj"
+    class-ref="org.kuali.kfs.coa.businessobject.Chart" auto-retrieve="true"
+    auto-update="none" auto-delete="none" proxy="true">
+@@ -45,27 +37,19 @@
+  <class-descriptor
+   class="edu.arizona.kfs.module.cam.businessobject.AssetExtension"
+   table="CM_CPTLAST_EXT_T">
+-
+   <field-descriptor name="capitalAssetNumber" column="CPTLAST_NBR"
+    jdbc-type="BIGINT" primarykey="true" index="true" />
+-
+   <field-descriptor name="objectId" column="OBJ_ID"
+    jdbc-type="VARCHAR" index="true" />
+-
+   <field-descriptor name="versionNumber" column="VER_NBR"
+    jdbc-type="BIGINT" locking="true" />
+-
+   <field-descriptor name="inventoryUnitCode" column="INV_UNIT_CD"
+    jdbc-type="VARCHAR" />
+-   
+-   <field-descriptor name="inventoryUnitChartOfAccountsCode"
++  <field-descriptor name="inventoryUnitChartOfAccountsCode"
+    column="FIN_COA_CD" jdbc-type="VARCHAR" />
+-
+   <field-descriptor name="inventoryUnitOrganizationCode"
+-   column="ORG_CD" jdbc-type="VARCHAR"/>
++   column="ORG_CD" jdbc-type="VARCHAR" />
+ 
+-  
+-
+   <reference-descriptor name="assetObj"
+    class-ref="org.kuali.kfs.module.cam.businessobject.Asset"
+    auto-retrieve="true" auto-update="none" auto-delete="none" proxy="true">
+@@ -500,41 +484,33 @@
+    <foreignkey field-ref="capitalAssetNumber" />
+   </reference-descriptor>
+ 
+- </class-descriptor> 
++ </class-descriptor>
+ 
+ 
+  <class-descriptor
+   class="edu.arizona.kfs.module.cam.businessobject.AssetGlobalDetailExtension"
+   table="CM_CPTLAST_DTL_EXTEN_T">
+-
+   <field-descriptor name="documentNumber" column="FDOC_NBR"
+    jdbc-type="VARCHAR" primarykey="true" index="true" />
+-
+   <field-descriptor name="capitalAssetNumber" column="CPTLAST_NBR"
+    jdbc-type="BIGINT" primarykey="true" index="true" />
+-
+   <field-descriptor name="objectId" column="OBJ_ID"
+    jdbc-type="VARCHAR" index="true" />
+-
+   <field-descriptor name="versionNumber" column="VER_NBR"
+    jdbc-type="BIGINT" locking="true" />
+-
+   <field-descriptor name="inventoryUnitCode" column="INV_UNIT_CD"
+    jdbc-type="VARCHAR" />
+-
+   <field-descriptor name="inventoryUnitOrganizationCode"
+    column="ORG_CD" jdbc-type="VARCHAR" />
+-
+   <field-descriptor name="inventoryUnitChartOfAccountsCode"
+    column="FIN_COA_CD" jdbc-type="VARCHAR" />
+-
++  
+   <reference-descriptor name="assetGlobalDetailObj"
+    class-ref="org.kuali.kfs.module.cam.businessobject.AssetGlobalDetail"
+    auto-retrieve="true" auto-update="none" auto-delete="none" proxy="true">
+    <foreignkey field-ref="documentNumber" />
+    <foreignkey field-ref="capitalAssetNumber" />
+   </reference-descriptor>
+-  
+ 
+   <reference-descriptor name="assetInvUnitObj"
+    class-ref="edu.arizona.kfs.module.cam.businessobject.AssetInventoryUnit"
+@@ -543,11 +519,87 @@
+    <foreignkey field-ref="inventoryUnitChartOfAccountsCode" />
+    <foreignkey field-ref="inventoryUnitOrganizationCode" />
+   </reference-descriptor>
++ </class-descriptor>
++ 
++ <class-descriptor class="org.kuali.kfs.module.cam.document.AssetTransferDocument" table="CM_AST_TRNFR_DOC_T">
++ <field-descriptor name="documentNumber" column="FDOC_NBR" jdbc-type="VARCHAR" primarykey="true" index="true"/>
++ <field-descriptor name="versionNumber" column="VER_NBR" jdbc-type="BIGINT" locking="true"/>
++ <field-descriptor name="objectId" column="OBJ_ID" jdbc-type="VARCHAR" index="true"/>
++ <field-descriptor name="representativeUniversalIdentifier" column="AST_REP_UNVL_ID" jdbc-type="VARCHAR"/>
++ <field-descriptor name="campusCode" column="CAMPUS_CD" jdbc-type="VARCHAR"/>
++ <field-descriptor name="buildingCode" column="BLDG_CD" jdbc-type="VARCHAR"/>
++ <field-descriptor name="buildingRoomNumber" column="BLDG_ROOM_NBR" jdbc-type="VARCHAR"/>
++ <field-descriptor name="buildingSubRoomNumber" column="BLDG_SUB_ROOM_NBR" jdbc-type="VARCHAR"/>
++ <field-descriptor name="organizationTagNumber" column="CPTLAST_ORGTAG_NBR" jdbc-type="VARCHAR"/>
++ <field-descriptor name="organizationOwnerChartOfAccountsCode" column="ORG_OWNER_COA_CD" jdbc-type="VARCHAR"/>
++ <field-descriptor name="organizationOwnerAccountNumber" column="ORG_OWNER_ACCT_NBR" jdbc-type="VARCHAR"/>
++ <field-descriptor name="organizationText" column="ORG_TXT" jdbc-type="VARCHAR"/>
++ <field-descriptor name="organizationInventoryName" column="ORG_INVN_NM" jdbc-type="VARCHAR"/>
++ <field-descriptor name="transferOfFundsFinancialDocumentNumber" column="TRNFR_FND_FDOC_NBR" jdbc-type="VARCHAR"/>
++ <field-descriptor name="offCampusName" column="AST_OFFCMP_NM" jdbc-type="VARCHAR"/>
++ <field-descriptor name="offCampusAddress" column="AST_OFFCMP_ADDR" jdbc-type="VARCHAR"/>
++ <field-descriptor name="offCampusCityName" column="AST_OFFCMP_CITY_NM" jdbc-type="VARCHAR"/>
++ <field-descriptor name="offCampusStateCode" column="AST_OFFCMP_ST_CD" jdbc-type="VARCHAR"/>
++ <field-descriptor name="offCampusZipCode" column="AST_OFFCMP_ZIP_CD" jdbc-type="VARCHAR"/>
++ <field-descriptor name="offCampusCountryCode" column="AST_OFFCMP_CNTRY_CD" jdbc-type="VARCHAR"/>
++ <field-descriptor name="interdepartmentalSalesIndicator" column="AST_INTRDPTSALE_CD" jdbc-type="CHAR" conversion="org.kuali.rice.kns.util.OjbCharBooleanConversion"/>
++ <field-descriptor name="capitalAssetNumber" column="CPTLAST_NBR" jdbc-type="BIGINT"/>
++ <field-descriptor name="oldOrganizationOwnerChartOfAccountsCode" column="OLD_ORG_OWNER_COA_CD" jdbc-type="VARCHAR" />
++ <field-descriptor name="oldOrganizationOwnerAccountNumber" column="OLD_ORG_OWNER_ACCT_NBR" jdbc-type="VARCHAR" />
++ <!-- KITT-1865 Begin  -->
++ <field-descriptor name="inventoryUnitCode" column="INV_UNIT_CD" jdbc-type="VARCHAR" />
++ <field-descriptor name="inventoryUnitChartOfAccountsCode" column="FIN_COA_CD" jdbc-type="VARCHAR" />
++ <field-descriptor name="inventoryUnitOrganizationCode" column="ORG_CD" jdbc-type="VARCHAR" />
++ <field-descriptor name="oldInventoryUnitCode" column="OLD_INV_UNIT_CD" jdbc-type="VARCHAR" />
++ <field-descriptor name="oldInventoryUnitChartOfAccountsCode" column="OLD_FIN_COA_CD" jdbc-type="VARCHAR" />
++ <field-descriptor name="oldInventoryUnitOrganizationCode" column="OLD_ORG_CD" jdbc-type="VARCHAR" />
++<!-- KITT-1865 End  -->
+ 
++ <reference-descriptor name="documentHeader" class-ref="org.kuali.kfs.sys.businessobject.FinancialSystemDocumentHeader" auto-retrieve="true" auto-update="object" auto-delete="object" proxy="true" >
++  <foreignkey field-ref="documentNumber" />
++ </reference-descriptor>
++ <reference-descriptor name="organizationOwnerAccount" class-ref="org.kuali.kfs.coa.businessobject.Account" auto-retrieve="true" auto-update="none" auto-delete="none" proxy="true" >
++  <foreignkey field-ref="organizationOwnerChartOfAccountsCode" />
++  <foreignkey field-ref="organizationOwnerAccountNumber" />
++ </reference-descriptor>
++ <reference-descriptor name="oldOrganizationOwnerAccount" class-ref="org.kuali.kfs.coa.businessobject.Account" auto-retrieve="true" auto-update="none" auto-delete="none" proxy="true" >
++  <foreignkey field-ref="oldOrganizationOwnerChartOfAccountsCode" />
++  <foreignkey field-ref="oldOrganizationOwnerAccountNumber" />
++ </reference-descriptor>
++ <reference-descriptor name="organizationOwnerChartOfAccounts" class-ref="org.kuali.kfs.coa.businessobject.Chart" auto-retrieve="true" auto-update="none" auto-delete="none" proxy="true" >
++  <foreignkey field-ref="organizationOwnerChartOfAccountsCode" />
++ </reference-descriptor>
++ <!-- <reference-descriptor name="transferOfFundsFinancialDocument" class-ref="org.kuali.kfs.fp.document.TransferOfFundsDocument" auto-retrieve="true" auto-update="none" auto-delete="none" proxy="true" >
++  <foreignkey field-ref="transferOfFundsFinancialDocumentNumber" />
++ </reference-descriptor> -->
++    <reference-descriptor name="building" class-ref="org.kuali.kfs.sys.businessobject.Building" auto-retrieve="true" auto-update="none" auto-delete="none" proxy="true" >
++        <foreignkey field-ref="campusCode" />
++        <foreignkey field-ref="buildingCode" />
++    </reference-descriptor>
++    <reference-descriptor name="buildingRoom" class-ref="org.kuali.kfs.sys.businessobject.Room" auto-retrieve="true" auto-update="none" auto-delete="none" proxy="true" >
++        <foreignkey field-ref="campusCode" />
++        <foreignkey field-ref="buildingCode" />
++        <foreignkey field-ref="buildingRoomNumber" />
++    </reference-descriptor>
++ <reference-descriptor name="asset" class-ref="org.kuali.kfs.module.cam.businessobject.Asset" auto-retrieve="true" auto-update="none" auto-delete="none" proxy="true" >
++  <foreignkey field-ref="capitalAssetNumber" />
++    </reference-descriptor>
++    <!-- General ledger entries  -->
++    <collection-descriptor name="generalLedgerPendingEntries" proxy="true" element-class-ref="org.kuali.kfs.sys.businessobject.GeneralLedgerPendingEntry" collection-class="org.apache.ojb.broker.util.collections.ManageableArrayList" auto-retrieve="true" auto-update="object" auto-delete="object">
++        <orderby name="transactionLedgerEntrySequenceNumber" sort="ASC" />
++        <inverse-foreignkey field-ref="documentNumber" />
++    </collection-descriptor>
++  <!-- KITT-1865 Begin  -->  
++  <reference-descriptor name="assetInvUnitObj" class-ref="edu.arizona.kfs.module.cam.businessobject.AssetInventoryUnit" auto-retrieve="true" auto-update="none" auto-delete="none" proxy="false">
++   <foreignkey field-ref="inventoryUnitCode" />
++   <foreignkey field-ref="inventoryUnitChartOfAccountsCode" />
++   <foreignkey field-ref="inventoryUnitOrganizationCode" />
++  </reference-descriptor>
++  <!-- KITT-1865 End  -->
++    
++</class-descriptor>
++ 
+ 
+ 
+- </class-descriptor>
+-
+-
+ </descriptor-repository>
+ 
+Index: work/src/edu/arizona/kfs/module/cam/KFSKeyConstants.java
+===================================================================
+--- work/src/edu/arizona/kfs/module/cam/KFSKeyConstants.java	(revision 14724)
++++ work/src/edu/arizona/kfs/module/cam/KFSKeyConstants.java	(revision 14725)
+@@ -31,4 +31,7 @@
+     public static final String ERROR_INVENTORY_UNIT_CODE_NOT_EXIST = "error.document.assetInventoryUnits.existence.inventoryUnitCode";
+     public static final String ERROR_INVENTORY_COA_NOT_MATCH_ORG_OWNER_COA = "error.document.assetInventoryUnits.matching.chartOfAccountsCode";
+     public static final String ERROR_INVENTORY_COA_NOT_MATCH_ORG_OWNER_CODE = "error.document.assetInventoryUnits.matching.organizationCode";
++    public static final String ERROR_INVENTORY_ORG_OWNER_CODE_REQUIRED = "error.document.assetInventoryUnits.organizationCode.required";
++    public static final String ERROR_INVENTORY_COA_CODE_REQUIRED = "error.document.assetInventoryUnits.coaCode.required";
++    public static final String ERROR_INVENTORY_UNIT_CODE_REQUIRED = "error.document.assetInventoryUnits.unitCode.required";
+ }
+Index: work/src/edu/arizona/kfs/module/cam/document/datadictionary/AssetTransferDocument.xml
+===================================================================
+--- work/src/edu/arizona/kfs/module/cam/document/datadictionary/AssetTransferDocument.xml	(revision 0)
++++ work/src/edu/arizona/kfs/module/cam/document/datadictionary/AssetTransferDocument.xml	(revision 14725)
+@@ -0,0 +1,102 @@
++<?xml version="1.0" encoding="UTF-8"?>
++<beans xmlns="http://www.springframework.org/schema/beans" 
++xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
++xmlns:p="http://www.springframework.org/schema/p" 
++xsi:schemaLocation="http://www.springframework.org/schema/beans         
++http://www.springframework.org/schema/beans/spring-beans-2.0.xsd">
++<!--
++ Copyright 2007-2009 The Kuali Foundation
++ 
++ Licensed under the Educational Community License, Version 2.0 (the "License");
++ you may not use this file except in compliance with the License.
++ You may obtain a copy of the License at
++ 
++ http://www.opensource.org/licenses/ecl2.php
++ 
++ Unless required by applicable law or agreed to in writing, software
++ distributed under the License is distributed on an "AS IS" BASIS,
++ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ See the License for the specific language governing permissions and
++ limitations under the License.
++-->
++
++  <bean id="AssetTransferDocument" parent="AssetTransferDocument-parentBean">
++  
++  <property name="businessRulesClass" value="edu.arizona.kfs.module.cam.document.validation.impl.AssetTransferDocumentRule"/>
++    
++    <property name="attributes">
++      <list merge = "true">
++      
++        <ref bean="AssetTransferDocument-inventoryUnitCode"/>
++        <ref bean="AssetTransferDocument-inventoryUnitChartOfAccountsCode"/>
++        <ref bean="AssetTransferDocument-inventoryUnitOrganizationCode"/>
++        <ref bean="AssetTransferDocument-oldInventoryUnitCode"/>
++        <ref bean="AssetTransferDocument-oldInventoryUnitChartOfAccountsCode"/>
++        <ref bean="AssetTransferDocument-oldInventoryUnitOrganizationCode"/>
++        
++      </list>
++    </property>
++    </bean>
++
++<!-- Attribute Definitions -->
++
++
++  <bean id="AssetTransferDocument-inventoryUnitCode" parent="AssetTransferDocument-inventoryUnitCode-parentBean"/>
++  <bean id="AssetTransferDocument-inventoryUnitCode-parentBean" abstract="true" parent="AssetInventoryUnit-inventoryUnitCode-parentBean">
++  <property name="name" value="inventoryUnitCode"/>
++      <property name="label" value="Inventory Unit Code"/>
++    <property name="shortLabel" value="Inv Unit Code"/>
++  </bean>
++  
++    <bean id="AssetTransferDocument-inventoryUnitChartOfAccountsCode" parent="AssetTransferDocument-inventoryUnitChartOfAccountsCode-parentBean"/>
++  <bean id="AssetTransferDocument-inventoryUnitChartOfAccountsCode-parentBean" abstract="true" parent="AssetInventoryUnit-chartOfAccountsCode-parentBean">
++  <property name="name" value="inventoryUnitChartOfAccountsCode"/>
++      <property name="label" value="Inventory Unit Chart Of Accounts Code"/>
++    <property name="shortLabel" value="Inv Unit COA Code"/>
++  </bean>
++  
++  <bean id="AssetTransferDocument-inventoryUnitOrganizationCode" parent="AssetTransferDocument-inventoryUnitOrganizationCode-parentBean"/>
++  <bean id="AssetTransferDocument-inventoryUnitOrganizationCode-parentBean" abstract="true" parent="AssetInventoryUnit-organizationCode-parentBean">
++  <property name="name" value="inventoryUnitOrganizationCode"/>
++      <property name="label" value="Inventory Unit Organization Code"/>
++    <property name="shortLabel" value="Inv Unit Org Code"/>
++  </bean>
++  
++  <bean id="AssetTransferDocument-oldInventoryUnitCode" parent="AssetTransferDocument-oldInventoryUnitCode-parentBean"/>
++  <bean id="AssetTransferDocument-oldInventoryUnitCode-parentBean" abstract="true" parent="AttributeDefinition">
++    <property name="name" value="oldInventoryUnitCode"/>
++    <property name="label" value="Inventory Unit Code"/>
++    <property name="shortLabel" value="Inv Unit Code"/>
++    <property name="required" value="false"/>
++    <property name="maxLength" value="2" />
++    <property name="control">
++   <bean parent="TextControlDefinition" p:size="40" />
++  </property>
++  </bean>
++  
++  <bean id="AssetTransferDocument-oldInventoryUnitChartOfAccountsCode" parent="AssetTransferDocument-oldInventoryUnitChartOfAccountsCode-parentBean"/>
++  <bean id="AssetTransferDocument-oldInventoryUnitChartOfAccountsCode-parentBean" abstract="true" parent="AttributeDefinition">
++    <property name="name" value="oldInventoryUnitChartOfAccountsCode"/>
++    <property name="label" value="Inventory Unit Chart Of Accounts Code"/>
++    <property name="shortLabel" value="Inv Unit COA Code"/>
++    <property name="required" value="false"/>
++    <property name="maxLength" value="2" />
++    <property name="control">
++   <bean parent="TextControlDefinition" p:size="40" />
++  </property>
++  </bean>
++  
++  <bean id="AssetTransferDocument-oldInventoryUnitOrganizationCode" parent="AssetTransferDocument-oldInventoryUnitOrganizationCode-parentBean"/>
++  <bean id="AssetTransferDocument-oldInventoryUnitOrganizationCode-parentBean" abstract="true" parent="AttributeDefinition">
++    <property name="name" value="oldInventoryUnitOrganizationCode"/>
++    <property name="label" value="Inventory Unit Organization Code"/>
++    <property name="shortLabel" value="Inv Unit Org Code"/>
++    <property name="required" value="false"/>
++    <property name="maxLength" value="4" />
++    <property name="control">
++   <bean parent="TextControlDefinition" p:size="40" />
++  </property>
++  </bean>
++  
++    </beans>
++  
+Index: work/src/edu/arizona/kfs/module/cam/document/validation/impl/AssetTransferDocumentRule.java
+===================================================================
+--- work/src/edu/arizona/kfs/module/cam/document/validation/impl/AssetTransferDocumentRule.java	(revision 0)
++++ work/src/edu/arizona/kfs/module/cam/document/validation/impl/AssetTransferDocumentRule.java	(revision 14725)
+@@ -0,0 +1,67 @@
++/*
++ * Copyright 2010 The Kuali Foundation.
++ * 
++ * Licensed under the Educational Community License, Version 1.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy of the License at
++ * 
++ * http://www.opensource.org/licenses/ecl1.php
++ * 
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++package edu.arizona.kfs.module.cam.document.validation.impl;
++
++import org.apache.commons.lang.StringUtils;
++import org.kuali.kfs.module.cam.businessobject.Asset;
++import org.kuali.kfs.module.cam.document.AssetTransferDocument;
++import org.kuali.rice.kns.document.Document;
++import org.kuali.rice.kns.util.ObjectUtils;
++
++import edu.arizona.kfs.module.cam.KFSKeyConstants;
++import edu.arizona.kfs.module.cam.businessobject.AssetExtension;
++
++/**
++ * This class...
++ */
++public class AssetTransferDocumentRule extends org.kuali.kfs.module.cam.document.validation.impl.AssetTransferDocumentRule {
++
++    @Override
++    protected boolean processCustomSaveDocumentBusinessRules(Document document) {
++        boolean success = true;
++        AssetTransferDocument assetTransferDocument = (AssetTransferDocument) document;
++        Asset asset = assetTransferDocument.getAsset();
++        AssetExtension extension = (AssetExtension) asset.getExtension();
++        
++        if(StringUtils.isBlank(assetTransferDocument.getInventoryUnitOrganizationCode())){
++            putError("inventoryUnitOrganizationCode", KFSKeyConstants.ERROR_INVENTORY_ORG_OWNER_CODE_REQUIRED, assetTransferDocument.getInventoryUnitOrganizationCode());
++            success = false;
++        }
++        
++        if(StringUtils.isBlank(assetTransferDocument.getInventoryUnitChartOfAccountsCode())){
++            putError("inventoryUnitChartOfAccountsCode", KFSKeyConstants.ERROR_INVENTORY_COA_CODE_REQUIRED, assetTransferDocument.getInventoryUnitChartOfAccountsCode());
++            success = false;
++        }
++        
++        if(StringUtils.isBlank(assetTransferDocument.getInventoryUnitCode())){
++            putError("inventoryUnitCode", KFSKeyConstants.ERROR_INVENTORY_UNIT_CODE_REQUIRED, assetTransferDocument.getInventoryUnitCode());
++            success = false;
++        }
++        
++        if(ObjectUtils.isNotNull(assetTransferDocument.getOrganizationOwnerAccount()) && StringUtils.isNotBlank(assetTransferDocument.getOrganizationOwnerAccount().getOrganizationCode()) && StringUtils.isNotBlank(assetTransferDocument.getInventoryUnitOrganizationCode())){
++        if(! assetTransferDocument.getOrganizationOwnerAccount().getOrganizationCode().equalsIgnoreCase(assetTransferDocument.getInventoryUnitOrganizationCode())){
++            putError("inventoryUnitOrganizationCode", KFSKeyConstants.ERROR_INVENTORY_COA_NOT_MATCH_ORG_OWNER_CODE, assetTransferDocument.getInventoryUnitOrganizationCode());
++            success = false;
++        }
++        }
++        
++        if(success == true){
++            success &= super.processCustomSaveDocumentBusinessRules(document);
++        }
++            
++        return success;
++    }
++}
+Index: work/web-root/jsp/module/cams/AssetTransfer.jsp
+===================================================================
+--- work/web-root/jsp/module/cams/AssetTransfer.jsp	(revision 14724)
++++ work/web-root/jsp/module/cams/AssetTransfer.jsp	(revision 14725)
+@@ -51,7 +51,7 @@
+ 				<td class="grid" width="25%"><kul:htmlControlAttribute property="document.organizationOwnerAccountNumber" attributeEntry="${assetTransferAttributes.organizationOwnerAccountNumber}" readOnly="${readOnly}"/>
+ 					<c:if test="${not readOnly}">
+ 						&nbsp;
+-		                <kul:lookup boClassName="org.kuali.kfs.coa.businessobject.Account" fieldConversions="accountNumber:document.organizationOwnerAccountNumber,chartOfAccountsCode:document.organizationOwnerChartOfAccountsCode" lookupParameters="document.organizationOwnerAccountNumber:accountNumber,document.organizationOwnerChartOfAccountsCode:chartOfAccountsCode" />
++		             <kul:lookup boClassName="org.kuali.kfs.coa.businessobject.Account" fieldConversions="accountNumber:document.organizationOwnerAccountNumber,chartOfAccountsCode:document.organizationOwnerChartOfAccountsCode" lookupParameters="document.organizationOwnerAccountNumber:accountNumber,document.organizationOwnerChartOfAccountsCode:chartOfAccountsCode" />
+ 	                </c:if>
+ 				</td>				
+ 			</tr>
+@@ -62,8 +62,49 @@
+ 				<th class="grid" width="25%" align="right"><kul:htmlAttributeLabel attributeEntry="${organizationAttributes.organizationCode}"/></th>
+                 <td class="grid" width="25%"><kul:htmlControlAttribute property="document.organizationOwnerAccount.organizationCode" attributeEntry="${organizationAttributes.organizationCode}" readOnly="true" /></td>
+  			</tr>
+-
++ 			
++ 			<!--**START AZ** KITT-1131 KevinMcO-->
++ 			<tr>
++				<th class="grid" width="25%" align="right"><kul:htmlAttributeLabel attributeEntry="${assetTransferAttributes.oldInventoryUnitCode}" readOnly="true" /></th>
++				<td class="grid" width="25%"><kul:htmlControlAttribute property="document.oldInventoryUnitCode" attributeEntry="${assetTransferAttributes.oldInventoryUnitCode}" readOnly="true"/></td>
++				<th class="grid" width="25%" align="right"><kul:htmlAttributeLabel attributeEntry="${assetTransferAttributes.inventoryUnitCode}" /></th>
++				<td class="grid" width="25%"><kul:htmlControlAttribute property="document.inventoryUnitCode" attributeEntry="${assetTransferAttributes.inventoryUnitCode}" readOnly="${readOnly}"/>
++					
++					<c:if test="${not readOnly}">
++						&nbsp;
++		                <kul:lookup boClassName="edu.arizona.kfs.module.cam.businessobject.AssetInventoryUnit" fieldConversions="inventoryUnitCode:document.inventoryUnitCode,chartOfAccountsCode:document.inventoryUnitChartOfAccountsCode,organizationCode:document.inventoryUnitOrganizationCode" lookupParameters="document.inventoryUnitCode:inventoryUnitCode,document.inventoryUnitChartOfAccountsCode:chartOfAccountsCode,document.inventoryUnitOrganizationCode:organizationCode"/>
++	                </c:if>
++	       		</td>				
++			</tr>
+ 			<tr>
++				<th class="grid" width="25%" align="right"><kul:htmlAttributeLabel attributeEntry="${assetTransferAttributes.oldInventoryUnitChartOfAccountsCode}" readOnly="true" /></th>
++				<td class="grid" width="25%"><kul:htmlControlAttribute property="document.oldInventoryUnitChartOfAccountsCode" attributeEntry="${assetTransferAttributes.oldInventoryUnitChartOfAccountsCode}" readOnly="true"/></td>
++				<th class="grid" width="25%" align="right"><kul:htmlAttributeLabel attributeEntry="${assetTransferAttributes.inventoryUnitChartOfAccountsCode}" /></th>
++				<td class="grid" width="25%"><kul:htmlControlAttribute property="document.inventoryUnitChartOfAccountsCode" attributeEntry="${assetTransferAttributes.inventoryUnitChartOfAccountsCode}" readOnly="${readOnly}"/>
++					
++					<c:if test="${not readOnly}">
++						&nbsp;
++		                <kul:lookup boClassName="edu.arizona.kfs.module.cam.businessobject.AssetInventoryUnit" fieldConversions="inventoryUnitCode:document.inventoryUnitCode,chartOfAccountsCode:document.inventoryUnitChartOfAccountsCode,organizationCode:document.inventoryUnitOrganizationCode" lookupParameters="document.inventoryUnitCode:inventoryUnitCode,document.inventoryUnitChartOfAccountsCode:chartOfAccountsCode,document.inventoryUnitOrganizationCode:organizationCode"/>
++	                </c:if>
++	       		</td>				
++			</tr>
++			<tr>
++				<th class="grid" width="25%" align="right"><kul:htmlAttributeLabel attributeEntry="${assetTransferAttributes.oldInventoryUnitOrganizationCode}" readOnly="true" /></th>
++				<td class="grid" width="25%"><kul:htmlControlAttribute property="document.oldInventoryUnitOrganizationCode" attributeEntry="${assetTransferAttributes.oldInventoryUnitOrganizationCode}" readOnly="true"/></td>
++				<th class="grid" width="25%" align="right"><kul:htmlAttributeLabel attributeEntry="${assetTransferAttributes.inventoryUnitOrganizationCode}" /></th>
++				<td class="grid" width="25%"><kul:htmlControlAttribute property="document.inventoryUnitOrganizationCode" attributeEntry="${assetTransferAttributes.inventoryUnitOrganizationCode}" readOnly="${readOnly}"/>
++					
++					<c:if test="${not readOnly}">
++						&nbsp;
++		                <kul:lookup boClassName="edu.arizona.kfs.module.cam.businessobject.AssetInventoryUnit" fieldConversions="inventoryUnitCode:document.inventoryUnitCode,chartOfAccountsCode:document.inventoryUnitChartOfAccountsCode,organizationCode:document.inventoryUnitOrganizationCode" lookupParameters="document.inventoryUnitCode:inventoryUnitCode,document.inventoryUnitChartOfAccountsCode:chartOfAccountsCode,document.inventoryUnitOrganizationCode:organizationCode"/>
++	                </c:if>
++	       		</td>				
++			</tr>
++ 			
++ 			
++ 			<!--**END AZ** KITT-1131 KevinMcO-->
++ 			
++ 			<tr>
+ 				<td class="tab-subhead" colspan="4" width="100%">Interdepartmental Sale</td>
+ 			</tr>			
+ 			<tr>
+Index: .classpath
+===================================================================
+--- .classpath	(revision 14724)
++++ .classpath	(revision 14725)
+@@ -29,7 +29,7 @@
+ 	<classpathentry exported="true" kind="lib" path="work/web-root/WEB-INF/lib/oscache-2.3.2.jar"/>
+ 	<classpathentry exported="true" kind="lib" path="work/web-root/WEB-INF/lib/quartz-1.6.0.jar"/>
+ 	<classpathentry exported="true" kind="lib" path="work/web-root/WEB-INF/lib/saaj-1.2.jar"/>
+-	<classpathentry exported="true" kind="lib" path="work/web-root/WEB-INF/lib/spring-2.0.4.jar"/>
++	<classpathentry exported="true" kind="lib" path="work/web-root/WEB-INF/lib/spring-2.0.4.jar" sourcepath="/NewRice"/>
+ 	<classpathentry exported="true" kind="lib" path="work/web-root/WEB-INF/lib/spring-modules-ojb-0.8a.jar"/>
+ 	<classpathentry exported="true" kind="lib" path="work/web-root/WEB-INF/lib/struts-1.2.9.jar"/>
+ 	<classpathentry exported="true" kind="lib" path="work/web-root/WEB-INF/lib/xercesImpl-2.7.1.jar"/>
+@@ -57,7 +57,7 @@
+ 	<classpathentry exported="true" kind="lib" path="work/web-root/WEB-INF/lib/wsdl4j-1.6.2.jar"/>
+ 	<classpathentry exported="true" kind="lib" path="work/web-root/WEB-INF/lib/jaxen-1.1.1.jar"/>
+ 	<classpathentry exported="true" kind="lib" path="work/web-root/WEB-INF/lib/rice-api-1.0.1.jar"/>
+-	<classpathentry exported="true" kind="lib" path="work/web-root/WEB-INF/lib/rice-impl-1.0.1.jar" sourcepath="/rice"/>
++	<classpathentry exported="true" kind="lib" path="work/web-root/WEB-INF/lib/rice-impl-1.0.1.jar" sourcepath="/NewRice"/>
+ 	<classpathentry exported="true" kind="lib" path="work/web-root/WEB-INF/lib/opencsv-1.8.jar"/>
+ 	<classpathentry exported="true" kind="lib" path="work/web-root/WEB-INF/lib/cxf-2.1.5.jar"/>
+ 	<classpathentry exported="true" kind="lib" path="work/web-root/WEB-INF/lib/jaxb-impl-2.1.9.jar"/>

@@ -1,0 +1,134 @@
+------------------------------------------------------------------------
+r10491 | kevinmco | 2010-06-15 17:08:30 -0700 (Tue, 15 Jun 2010) | 1 line
+Changed paths:
+   M /financial-system/kfs-cfg-dbs/trunk/latest/tab/CM_CPTLAST_EXT_T.xml
+   A /financial-system/kfs-cfg-dbs/trunk/latest/tab/CM_CPTLAST_INV_UNIT_T.xml
+
+KITT-1135 Create Inventory Units table and extension for latest
+------------------------------------------------------------------------
+------------------------------------------------------------------------
+r10492 | kevinmco | 2010-06-15 17:34:22 -0700 (Tue, 15 Jun 2010) | 1 line
+Changed paths:
+   A /financial-system/kfs-cfg-dbs/trunk/update/KITT-1135.xml
+   M /financial-system/kfs-cfg-dbs/trunk/update.xml
+
+KITT-1135 Create Inventory Unit table
+------------------------------------------------------------------------
+------------------------------------------------------------------------
+r10514 | kevinmco | 2010-06-16 13:15:51 -0700 (Wed, 16 Jun 2010) | 1 line
+Changed paths:
+   M /financial-system/kfs-cfg-dbs/trunk/latest/tab/CM_CPTLAST_INV_UNIT_T.xml
+
+KITT-1135
+------------------------------------------------------------------------
+------------------------------------------------------------------------
+r10515 | kevinmco | 2010-06-16 13:17:54 -0700 (Wed, 16 Jun 2010) | 1 line
+Changed paths:
+   M /financial-system/kfs-cfg-dbs/trunk/update.xml
+
+KITT-1135
+------------------------------------------------------------------------
+------------------------------------------------------------------------
+r10516 | kevinmco | 2010-06-16 13:28:38 -0700 (Wed, 16 Jun 2010) | 1 line
+Changed paths:
+   A /financial-system/kfs-cfg-dbs/trunk/update/KITT-1136.xml (from /financial-system/kfs-cfg-dbs/trunk/update/KITT-1135.xml:10492)
+   M /financial-system/kfs-cfg-dbs/trunk/update.xml
+
+KITT-1136
+------------------------------------------------------------------------
+------------------------------------------------------------------------
+r10688 | kevinmco | 2010-06-24 12:35:58 -0700 (Thu, 24 Jun 2010) | 1 line
+Changed paths:
+   A /financial-system/kfs-cfg-dbs/trunk/update/KITT-1131.xml
+
+KITT-1135
+------------------------------------------------------------------------
+------------------------------------------------------------------------
+r11132 | kevinmco | 2010-07-14 13:20:16 -0700 (Wed, 14 Jul 2010) | 1 line
+Changed paths:
+   A /financial-system/kfs-cfg-dbs/trunk/latest/tab/CM_CPTLAST_DTL_EXTEN_T.xml
+   A /financial-system/kfs-cfg-dbs/trunk/update/KITT-1131.xml
+
+KITT-1131 new table CM_CPTLAST_DTL_EXTEN_T
+------------------------------------------------------------------------
+------------------------------------------------------------------------
+r11133 | kevinmco | 2010-07-14 13:26:32 -0700 (Wed, 14 Jul 2010) | 1 line
+Changed paths:
+   M /financial-system/kfs-cfg-dbs/trunk/latest/tab/CM_CPTLAST_EXT_T.xml
+
+KITT-1131
+------------------------------------------------------------------------
+------------------------------------------------------------------------
+r11289 | kevinmco | 2010-07-19 16:41:49 -0700 (Mon, 19 Jul 2010) | 1 line
+Changed paths:
+   A /financial-system/kfs-cfg-dbs/trunk/update/KITT-1131.xml
+
+KITT-1131
+------------------------------------------------------------------------
+------------------------------------------------------------------------
+r11921 | kevinmco | 2010-08-10 14:19:27 -0700 (Tue, 10 Aug 2010) | 1 line
+Changed paths:
+   M /financial-system/kfs/trunk/work/src/edu/arizona/kfs/fp/batch/service/impl/BankAdDocumentServiceImpl.java
+   M /financial-system/kfs/trunk/work/src/edu/arizona/kfs/fp/batch/service/impl/BankCreditCardDocumentServiceImpl.java
+   M /financial-system/kfs/trunk/work/src/edu/arizona/kfs/module/cam/KFSKeyConstants.java
+   M /financial-system/kfs/trunk/work/src/edu/arizona/kfs/module/cam/businessobject/AssetExtension.java
+   A /financial-system/kfs/trunk/work/src/edu/arizona/kfs/module/cam/businessobject/AssetGlobalDetailExtension.java
+   A /financial-system/kfs/trunk/work/src/edu/arizona/kfs/module/cam/businessobject/AssetInventoryUnit.java
+   M /financial-system/kfs/trunk/work/src/edu/arizona/kfs/module/cam/businessobject/datadictionary/Asset.xml
+   M /financial-system/kfs/trunk/work/src/edu/arizona/kfs/module/cam/businessobject/datadictionary/AssetAwardHistory.xml
+   M /financial-system/kfs/trunk/work/src/edu/arizona/kfs/module/cam/businessobject/datadictionary/AssetExtension.xml
+   A /financial-system/kfs/trunk/work/src/edu/arizona/kfs/module/cam/businessobject/datadictionary/AssetGlobalDetail.xml
+   A /financial-system/kfs/trunk/work/src/edu/arizona/kfs/module/cam/businessobject/datadictionary/AssetGlobalDetailExtension.xml
+   A /financial-system/kfs/trunk/work/src/edu/arizona/kfs/module/cam/businessobject/datadictionary/AssetInventoryUnit.xml
+   A /financial-system/kfs/trunk/work/src/edu/arizona/kfs/module/cam/document/datadictionary/AssetGlobalMaintenanceDocument.xml
+   A /financial-system/kfs/trunk/work/src/edu/arizona/kfs/module/cam/document/datadictionary/AssetInventoryUnitMaintenanceDocument.xml
+   M /financial-system/kfs/trunk/work/src/edu/arizona/kfs/module/cam/document/datadictionary/AssetMaintenanceDocument.xml
+   M /financial-system/kfs/trunk/work/src/edu/arizona/kfs/module/cam/document/validation/impl/AssetAwardHistoryRule.java
+   A /financial-system/kfs/trunk/work/src/edu/arizona/kfs/module/cam/document/validation/impl/AssetGlobalRule.java
+   A /financial-system/kfs/trunk/work/src/edu/arizona/kfs/module/cam/document/workflow/AssetInventoryUnitMaintenanceDocument.xml
+   M /financial-system/kfs/trunk/work/src/edu/arizona/kfs/module/cam/ojb-cam.xml
+   M /financial-system/kfs/trunk/work/src/edu/arizona/kfs/sys/ojb-sys.xml
+   M /financial-system/kfs/trunk/work/src/org/kuali/kfs/module/cam/businessobject/Asset.java
+   M /financial-system/kfs/trunk/work/src/org/kuali/kfs/module/cam/document/AssetGlobalMaintainableImpl.java
+   M /financial-system/kfs/trunk/work/src/org/kuali/kfs/module/cam/document/service/impl/AssetGlobalServiceImpl.java
+   M /financial-system/kfs/trunk/work/web-root/WEB-INF/tags/portal/channel/maintenance/capitalAsset.tag
+
+KITT-1135
+------------------------------------------------------------------------
+------------------------------------------------------------------------
+r11922 | kevinmco | 2010-08-10 14:19:44 -0700 (Tue, 10 Aug 2010) | 1 line
+Changed paths:
+   M /financial-system/kfs/trunk/work/src/arizona-ApplicationResources.properties
+
+KITT-1135
+------------------------------------------------------------------------
+------------------------------------------------------------------------
+r12330 | kevinmco | 2010-08-23 15:20:44 -0700 (Mon, 23 Aug 2010) | 1 line
+Changed paths:
+   A /financial-system/kfs-cfg-dbs/trunk/update/KITT-1138.xml
+
+KITT-1138  Retry of 1131
+------------------------------------------------------------------------
+------------------------------------------------------------------------
+r14725 | kevinmco@CATNET.ARIZONA.EDU | 2010-11-18 10:13:04 -0700 (Thu, 18 Nov 2010) | 1 line
+Changed paths:
+   M /financial-system/kfs/trunk/.classpath
+   M /financial-system/kfs/trunk/work/src/arizona-ApplicationResources.properties
+   M /financial-system/kfs/trunk/work/src/edu/arizona/kfs/module/cam/KFSKeyConstants.java
+   M /financial-system/kfs/trunk/work/src/edu/arizona/kfs/module/cam/businessobject/datadictionary/AssetInventoryUnit.xml
+   A /financial-system/kfs/trunk/work/src/edu/arizona/kfs/module/cam/document/datadictionary/AssetTransferDocument.xml
+   A /financial-system/kfs/trunk/work/src/edu/arizona/kfs/module/cam/document/validation/impl/AssetTransferDocumentRule.java
+   M /financial-system/kfs/trunk/work/src/edu/arizona/kfs/module/cam/ojb-cam.xml
+   M /financial-system/kfs/trunk/work/src/org/kuali/kfs/module/cam/document/AssetTransferDocument.java
+   M /financial-system/kfs/trunk/work/src/org/kuali/kfs/module/cam/document/web/struts/AssetTransferAction.java
+   M /financial-system/kfs/trunk/work/web-root/jsp/module/cams/AssetTransfer.jsp
+
+KITT-1865 Adding Asset Inventory Unit to Asset Transfer transactional document
+------------------------------------------------------------------------
+------------------------------------------------------------------------
+r14903 | kevinmco@CATNET.ARIZONA.EDU | 2010-11-29 16:06:37 -0700 (Mon, 29 Nov 2010) | 1 line
+Changed paths:
+   M /financial-system/kfs/trunk/work/src/org/kuali/kfs/module/cam/document/service/impl/AssetTransferServiceImpl.java
+
+KITT-1901 added code to save asset inventory unit data to asset
+------------------------------------------------------------------------

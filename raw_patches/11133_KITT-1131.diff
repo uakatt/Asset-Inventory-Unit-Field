@@ -1,0 +1,13 @@
+Index: financial-system/kfs-cfg-dbs/trunk/latest/tab/CM_CPTLAST_EXT_T.xml
+===================================================================
+--- financial-system/kfs-cfg-dbs/trunk/latest/tab/CM_CPTLAST_EXT_T.xml	(revision 11132)
++++ financial-system/kfs-cfg-dbs/trunk/latest/tab/CM_CPTLAST_EXT_T.xml	(revision 11133)
+@@ -11,7 +11,7 @@
+ 
+    <column name="CPTLAST_NBR" type="NUMBER(12,0)">
+     <constraints nullable="false" primaryKey="true"
+-     primaryKeyName="CM_CPTLAST_EXT_T_TP1" />
++     primaryKeyName="CM_CPTLAST_EXT_TP1" />
+    </column>
+ 
+    <column name="OBJ_ID" type="varchar2(36 BYTE)">

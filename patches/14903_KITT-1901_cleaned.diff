@@ -1,0 +1,27 @@
+Index: work/src/org/kuali/kfs/module/cam/document/service/impl/AssetTransferServiceImpl.java
+===================================================================
+--- work/src/org/kuali/kfs/module/cam/document/service/impl/AssetTransferServiceImpl.java	(revision 14902)
++++ work/src/org/kuali/kfs/module/cam/document/service/impl/AssetTransferServiceImpl.java	(revision 14903)
+@@ -45,6 +45,8 @@
+ import org.kuali.rice.kns.util.DateUtils;
+ import org.kuali.rice.kns.util.ObjectUtils;
+ 
++import edu.arizona.kfs.module.cam.businessobject.AssetExtension;
++
+ public class AssetTransferServiceImpl implements AssetTransferService {
+     protected static enum AmountCategory {
+         CAPITALIZATION {
+@@ -403,6 +405,13 @@
+     protected void saveAssetOwnerData(AssetTransferDocument document, Asset saveAsset) {
+         saveAsset.setOrganizationOwnerAccountNumber(document.getOrganizationOwnerAccountNumber());
+         saveAsset.setOrganizationOwnerChartOfAccountsCode(document.getOrganizationOwnerChartOfAccountsCode());
++        //**START AZ** KITT-1901 KevinMcO
++        AssetExtension assetExtension = (AssetExtension) saveAsset.getExtension();
++        assetExtension.setInventoryUnitChartOfAccountsCode(document.getInventoryUnitChartOfAccountsCode());
++        assetExtension.setInventoryUnitCode(document.getInventoryUnitCode());
++        assetExtension.setInventoryUnitOrganizationCode(document.getInventoryUnitOrganizationCode());
++        //**END AZ** KITT-1901 KevinMcO
++    
+     }
+ 
+     /**
