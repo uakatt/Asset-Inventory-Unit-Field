@@ -110,6 +110,13 @@ Changed paths:
 KITT-1138  Retry of 1131
 ------------------------------------------------------------------------
 ------------------------------------------------------------------------
+r12407 | kevinmco | 2010-08-25 15:19:41 -0700 (Wed, 25 Aug 2010) | 1 line
+Changed paths:
+   M /financial-system/kfs/trunk/work/src/edu/arizona/kfs/module/cam/businessobject/datadictionary/AssetGlobalDetailExtension.xml
+
+KITT-1555  Removed relationship for asset inventory unit
+------------------------------------------------------------------------
+------------------------------------------------------------------------
 r14725 | kevinmco@CATNET.ARIZONA.EDU | 2010-11-18 10:13:04 -0700 (Thu, 18 Nov 2010) | 1 line
 Changed paths:
    M /financial-system/kfs/trunk/.classpath
@@ -124,6 +131,13 @@ Changed paths:
    M /financial-system/kfs/trunk/work/web-root/jsp/module/cams/AssetTransfer.jsp
 
 KITT-1865 Adding Asset Inventory Unit to Asset Transfer transactional document
+------------------------------------------------------------------------
+------------------------------------------------------------------------
+r14728 | kevinmco@CATNET.ARIZONA.EDU | 2010-11-18 13:44:46 -0700 (Thu, 18 Nov 2010) | 1 line
+Changed paths:
+   M /financial-system/kfs/trunk/work/src/edu/arizona/kfs/module/cam/businessobject/datadictionary/Asset.xml
+
+KITT-1874 added Asset Inv Uit to lookup on Asset
 ------------------------------------------------------------------------
 ------------------------------------------------------------------------
 r14903 | kevinmco@CATNET.ARIZONA.EDU | 2010-11-29 16:06:37 -0700 (Mon, 29 Nov 2010) | 1 line

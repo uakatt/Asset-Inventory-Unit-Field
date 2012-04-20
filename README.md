@@ -42,6 +42,10 @@ This is a list of Jira tickets at the University of Arizona that relate to this 
   revisions: #14725
 * **KITT-1901**: (Bug fix for KITT-1865)<br />
   revisions: #14903
+* **KITT-1555**: (Bug fix)<br />
+  revisions: #12407
+* **KITT-1874**: (Modding Asset Lookup screen)<br />
+  revisions: #14728
 
 <h2><a name="liquibase_changesets">Liquibase Changesets</a></h2>
 
@@ -81,6 +85,8 @@ src/org/kuali/kfs...
 * [`patches/11922_KITT-1135_cleaned.diff`](Asset-Inventory-Unit-Field/blob/master/patches/11922_KITT-1135_cleaned.diff) is the patch file for #11922.
 * [`patches/14725_KITT-1865_cleaned.diff`](Asset-Inventory-Unit-Field/blob/master/patches/14725_KITT-1865_cleaned.diff) is the patch file for #14725.
 * [`patches/14903_KITT-1901_cleaned.diff`](Asset-Inventory-Unit-Field/blob/master/patches/14903_KITT-1901_cleaned.diff) is the patch file for #14903.
+* [`patches/12407_KITT-1555_cleaned.diff`](Asset-Inventory-Unit-Field/blob/master/patches/12407_KITT-1555_cleaned.diff) is the patch file for #12407.
+* [`patches/14728_KITT-1874_cleaned.diff`](Asset-Inventory-Unit-Field/blob/master/patches/14728_KITT-1874_cleaned.diff) is the patch file for #14728.
 
 <h2><a name="revisions">Revisions</a></h2>
 
@@ -104,9 +110,15 @@ file for every revision listed below for the following reasons:
 *   \#11922 was committed against KITT-1135 on 2010-08-10 21:19:44 UTC by <strong>kevinmco</strong>.
 
     > KITT-1135
+*   \#12407 was committed against KITT-1555 on 2010-08-25 22:19:41 UTC by <strong>kevinmco</strong>.
+
+    > KITT-1555  Removed relationship for asset inventory unit
 *   \#14725 was committed against KITT-1865 on 2010-11-18 17:13:04 UTC by <strong>kevinmco@CATNET.ARIZONA.EDU</strong>.
 
     > KITT-1865 Adding Asset Inventory Unit to Asset Transfer transactional document
+*   \#14728 was committed against KITT-1874 on 2010-11-18 20:44:46 UTC by <strong>kevinmco@CATNET.ARIZONA.EDU</strong>.
+
+    > KITT-1874 added Asset Inv Uit to lookup on Asset
 *   \#14903 was committed against KITT-1901 on 2010-11-29 23:06:37 UTC by <strong>kevinmco@CATNET.ARIZONA.EDU</strong>.
 
     > KITT-1901 added code to save asset inventory unit data to asset
@@ -170,9 +182,6 @@ For each file that was changed or added for this modification, I've looked at it
     > KFSI-2094
     > KITT-1446
     > Made several fixes and enhancements to the process to make it run more reliably, and to fail more obviously when it does fail.
-*   **#12407** touches /work/src/edu/arizona/kfs/module/cam/businessobject/datadictionary/AssetGlobalDetailExtension.xml.
-
-    > KITT-1555  Removed relationship for asset inventory unit
 *   **#12735** touches /work/src/edu/arizona/kfs/module/cam/businessobject/datadictionary/AssetGlobalDetail.xml.
 
     > KITT-1583  Hard wire up the capital asset number for asset extension
@@ -229,7 +238,7 @@ For each file that was changed or added for this modification, I've looked at it
     > KITT-3005
     > Adding existence validation for asset inventory unit.
 
-(15 revisions)
+(14 revisions)
 
 The following files were ignored here:
 

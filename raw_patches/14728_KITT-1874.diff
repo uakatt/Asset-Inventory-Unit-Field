@@ -1,0 +1,22 @@
+Index: financial-system/kfs/trunk/work/src/edu/arizona/kfs/module/cam/businessobject/datadictionary/Asset.xml
+===================================================================
+--- financial-system/kfs/trunk/work/src/edu/arizona/kfs/module/cam/businessobject/datadictionary/Asset.xml	(revision 14727)
++++ financial-system/kfs/trunk/work/src/edu/arizona/kfs/module/cam/businessobject/datadictionary/Asset.xml	(revision 14728)
+@@ -544,5 +544,17 @@
+   <property name="inquirableClass"
+    value="org.kuali.kfs.module.cam.businessobject.inquiry.AssetInquirableImpl" />
+  </bean>
++ 
++ <!-- Business Object Lookup Definition -->
+ 
++  <bean id="Asset-lookupDefinition" parent="Asset-lookupDefinition-parentBean">
++    <property name="lookupFields">
++      <list merge="true">
++       <bean parent="FieldDefinition" p:attributeName="extension.inventoryUnitCode" />
++       <bean parent="FieldDefinition" p:attributeName="extension.inventoryUnitChartOfAccountsCode" />
++       <bean parent="FieldDefinition" p:attributeName="extension.inventoryUnitOrganizationCode" />
++     </list>
++    </property>
++    </bean>   
++
+ </beans>

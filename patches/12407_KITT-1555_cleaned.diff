@@ -1,0 +1,22 @@
+Index: work/src/edu/arizona/kfs/module/cam/businessobject/datadictionary/AssetGlobalDetailExtension.xml
+===================================================================
+--- work/src/edu/arizona/kfs/module/cam/businessobject/datadictionary/AssetGlobalDetailExtension.xml	(revision 12406)
++++ work/src/edu/arizona/kfs/module/cam/businessobject/datadictionary/AssetGlobalDetailExtension.xml	(revision 12407)
+@@ -33,16 +33,7 @@
+      <dd:primitiveAttribute source="capitalAssetNumber"
+       target="capitalAssetNumber" />
+     </dd:relationship>
+-
+-    <dd:relationship objectAttribute="assetInvUnitObj">
+-     <dd:primitiveAttribute source="inventoryUnitCode"
+-      target="inventoryUnitCode" />
+-     <dd:primitiveAttribute source="inventoryUnitChartOfAccountsCode"
+-      target="chartOfAccountsCode" />
+-     <dd:primitiveAttribute source="inventoryUnitOrganizationCode"
+-      target="organizationCode" />
+-    </dd:relationship>
+-
++   
+    </list>
+   </property>
+ 
